@@ -1,0 +1,34 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+// Untuk Profil Perangkat Desa
+model PerangkatDesa {
+  id        Int      @id @default(autoincrement())
+  nama      String
+  jabatan   String
+  fotoUrl   String?  // URL gambar di-upload misal ke Vercel Blob/Cloudinary
+}
+
+// Untuk Etalase UMKM / Produk Kreatif
+model ProdukUMKM {
+  id          Int      @id @default(autoincrement())
+  namaProduk  String
+  deskripsi   String   @db.Text
+  namaPemilik String
+  kontakWa    String
+  fotoUrl     String?
+}
+
+// Untuk Berita / Kegiatan / Pengumuman
+model Artikel {
+  id        Int      @id @default(autoincrement())
+  judul     String
+  kategori  String   // Bisa diisi "Berita", "Pengumuman", atau "Kegiatan"
+  konten    String   @db.Text
+  createdAt DateTime @default(now())
+}
