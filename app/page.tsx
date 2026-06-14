@@ -1,65 +1,219 @@
 import Image from "next/image";
+import Link from "next/link";
+import Icon from "./components/Icon";
+import { prisma } from "@/lib/prisma";
 
-export default function Home() {
+const stats = [
+  { icon: "groups", value: "~2.400", label: "Penduduk", color: "primary" },
+  { icon: "landscape", value: "293,8 Ha", label: "Luas Wilayah", color: "secondary" },
+  { icon: "holiday_village", value: "10", label: "Dukuh", color: "tertiary" },
+  { icon: "agriculture", value: "1.000", label: "Ekor Sapi", color: "primary" },
+];
+
+const colorMap: Record<string, { border: string; icon: string; label: string; blob: string }> = {
+  primary: { border: "border-primary", icon: "text-primary", label: "text-secondary", blob: "bg-primary/5" },
+  secondary: { border: "border-secondary", icon: "text-secondary", label: "text-primary", blob: "bg-secondary/5" },
+  tertiary: { border: "border-tertiary", icon: "text-tertiary", label: "text-secondary", blob: "bg-tertiary-container/5" },
+};
+
+const getChipColor = (kategori: string) => {
+  switch (kategori) {
+    case "Peternakan": return "bg-primary-container text-on-primary-container";
+    case "Pemerintahan": return "bg-secondary-container text-on-secondary-container";
+    case "Ekonomi": return "bg-tertiary-container text-on-tertiary-container";
+    case "Infrastruktur": return "bg-primary-fixed text-on-primary-fixed";
+    case "Pendidikan": return "bg-secondary-fixed text-on-secondary-fixed";
+    case "Kesehatan": return "bg-tertiary-fixed text-on-tertiary-fixed";
+    default: return "bg-surface-variant text-on-surface-variant";
+  }
+};
+
+export default async function Home() {
+  const beritaList = await prisma.artikel.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 3,
+  });
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <>
+      {/* ====== HERO ====== */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <Image src="/hero-bg.png" alt="Pemandangan Desa Kedungdowo" fill className="object-cover" priority />
+          <div className="hero-gradient absolute inset-0" />
+        </div>
+
+        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto flex flex-col items-center gap-6 mt-16">
+          <span className="font-serif text-2xl md:text-3xl text-white font-bold drop-shadow-lg uppercase tracking-[0.2em]">
+            Selamat Datang di
+          </span>
+          <h1 className="font-serif text-4xl md:text-6xl text-white font-bold drop-shadow-lg leading-tight">
+            Desa Kedungdowo
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-lg md:text-xl text-white/90 font-serif font-semibold tracking-wide">
+            Harmonis · Mandiri · Berkelanjutan
           </p>
+          <p className="text-base md:text-lg text-white/80 max-w-2xl leading-relaxed">
+            Kecamatan Andong, Kabupaten Boyolali, Jawa Tengah — Desa Korporasi Sapi
+            dengan potensi peternakan unggulan dan semangat pemberdayaan UMKM syariah.
+          </p>
+
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
+          <Icon name="expand_more" className="text-white/60 text-3xl" />
         </div>
-      </main>
-    </div>
+      </section>
+
+      {/* ====== PROFIL VIDEO & INTRO ====== */}
+      <section className="py-16 md:py-24 bg-background">
+        <div className="max-w-[1200px] mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Left Column: Introduction */}
+            <div className="lg:col-span-5 flex flex-col justify-center">
+              <span className="text-secondary font-semibold text-sm uppercase tracking-wider block mb-3">
+                Selayang Pandang
+              </span>
+              <h2 className="font-serif text-3xl md:text-4xl text-primary font-bold mb-6">
+                Mengenal Lebih Dekat Desa Kedungdowo
+              </h2>
+              <p className="text-on-surface-variant text-base md:text-lg leading-relaxed mb-4">
+                Terletak di Kecamatan Andong, Kabupaten Boyolali, Jawa Tengah, <strong>Desa Kedungdowo</strong> merupakan wilayah yang berkembang pesat dengan perpaduan keindahan alam pedesaan dan inovasi pemberdayaan masyarakat.
+              </p>
+              <p className="text-on-surface-variant text-base leading-relaxed mb-6">
+                Desa kami terpilih menjadi salah satu pelopor program nasional <strong>Desa Korporasi Sapi</strong> yang mengintegrasikan peternakan sapi secara modern dari hulu ke hilir. Upaya kemandirian ini didukung erat oleh geliat <strong>UMKM Syariah</strong> yang digerakkan oleh para perempuan kreatif desa di 10 dukuh untuk memajukan perekonomian keluarga.
+              </p>
+              
+              {/* Highlight Features */}
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="flex items-start gap-2.5">
+                  <div className="text-primary mt-1">
+                    <Icon name="check_circle" className="text-xl" filled />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-on-background">Korporasi Sapi</h4>
+                    <p className="text-xs text-on-surface-variant">Koperasi modern & 1.000 sapi</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <div className="text-primary mt-1">
+                    <Icon name="check_circle" className="text-xl" filled />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-on-background">UMKM Syariah</h4>
+                    <p className="text-xs text-on-surface-variant">50+ usaha kreatif perempuan</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Link
+                  href="/profil"
+                  className="inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3.5 rounded-xl font-semibold text-sm hover:bg-surface-tint hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5 transition-all duration-300"
+                >
+                  Selengkapnya Tentang Desa <Icon name="arrow_forward" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Column: Video Container */}
+            <div className="lg:col-span-7">
+              <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-xl bg-surface-container-high border-2 border-outline-variant/30 relative group cursor-pointer">
+                <Image
+                  src="/video-placeholder.png"
+                  alt="Video Profil Desa Kedungdowo"
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
+                
+                {/* Play Button Overlay */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-20 h-20 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Icon name="play_arrow" className="text-4xl text-white" filled />
+                  </div>
+                </div>
+
+                {/* Video Title Card Overlay */}
+                <div className="absolute bottom-5 left-5 right-5 z-10 bg-black/60 backdrop-blur-md px-5 py-4 rounded-xl border border-white/10 flex items-center justify-between text-white">
+                  <div>
+                    <p className="font-semibold text-base">Tonton Video Profil Desa Kedungdowo</p>
+                    <p className="text-xs text-white/80">Dokumentasi KKN UNDIP TIM II 2026</p>
+                  </div>
+                  <span className="text-xs bg-white/20 px-3 py-1.5 rounded-full font-medium">5:00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      {/* ====== BERITA TERKINI ====== */}
+      <div className="batik-divider w-full" />
+      <section className="py-16 md:py-24 bg-background">
+        <div className="max-w-[1200px] mx-auto px-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-4">
+            <div>
+              <span className="text-secondary font-semibold text-sm uppercase tracking-wider block mb-3">
+                Kabar Desa
+              </span>
+              <h2 className="font-serif text-3xl md:text-4xl text-primary font-bold">
+                Berita & Kegiatan Terbaru
+              </h2>
+            </div>
+            <Link
+              href="/berita"
+              className="inline-flex items-center gap-2 text-primary hover:text-surface-tint font-semibold group transition-colors"
+            >
+              Lihat Semua Berita 
+              <Icon name="arrow_forward" className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+
+          {beritaList.length === 0 ? (
+            <div className="text-center py-16 bg-surface-container-lowest rounded-2xl border border-outline-variant/20 shadow-sm">
+              <Icon name="newspaper" className="text-5xl text-on-surface-variant/30 mb-4" />
+              <h3 className="font-serif text-lg font-bold text-on-background">Belum Ada Berita</h3>
+              <p className="text-on-surface-variant text-sm mt-1">Nantikan informasi kegiatan menarik dari desa kami segera.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {beritaList.map((berita) => (
+                <article key={berita.id} className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant/20 hover:shadow-md hover:shadow-secondary/5 transition-all group flex flex-col">
+                  {/* Image placeholder / icon */}
+                  <div className="h-48 overflow-hidden relative bg-gradient-to-br from-surface-container to-surface-variant flex items-center justify-center">
+                    <Icon name="campaign" filled className="text-6xl text-primary/30 group-hover:scale-110 transition-transform duration-500" />
+                    <div className={`absolute top-4 left-4 ${getChipColor(berita.kategori)} px-3 py-1 rounded-full text-xs font-bold`}>
+                      {berita.kategori}
+                    </div>
+                  </div>
+
+                  <div className="p-6 flex flex-col flex-grow">
+                    <time className="text-xs font-medium text-on-surface-variant mb-3 flex items-center gap-1.5">
+                      <Icon name="schedule" className="text-sm" />
+                      {new Date(berita.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                    </time>
+                    <h3 className="font-serif text-lg font-bold text-on-background mb-3 group-hover:text-primary transition-colors leading-snug line-clamp-2">
+                      {berita.judul}
+                    </h3>
+                    <p className="text-on-surface-variant text-sm leading-relaxed mb-6 flex-grow line-clamp-3">
+                      {berita.konten}
+                    </p>
+
+                    <div className="pt-4 border-t border-outline-variant/10">
+                      <Link href={`/berita`} className="text-secondary font-bold text-sm hover:text-primary transition-colors flex items-center gap-1.5">
+                        Baca Selengkapnya
+                        <Icon name="arrow_forward" className="text-sm" />
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    </>
   );
 }
