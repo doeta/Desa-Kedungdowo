@@ -1,26 +1,158 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ============================================
+   DESIGN SYSTEM: Rural Harmony
+   Desa Kedungdowo — Modern Rural Theme
+   ============================================ */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* --- Primary: Nature Green --- */
+  --color-primary: #0d631b;
+  --color-primary-container: #2e7d32;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #cbffc2;
+  --color-inverse-primary: #88d982;
+  --color-primary-fixed: #a3f69c;
+  --color-primary-fixed-dim: #88d982;
+  --color-on-primary-fixed: #002204;
+  --color-on-primary-fixed-variant: #005312;
+  --color-surface-tint: #1b6d24;
+
+  /* --- Secondary: Earth Brown --- */
+  --color-secondary: #7a5649;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #fdcdbc;
+  --color-on-secondary-container: #795548;
+  --color-secondary-fixed: #ffdbcf;
+  --color-secondary-fixed-dim: #ebbcac;
+  --color-on-secondary-fixed: #2e150b;
+  --color-on-secondary-fixed-variant: #603f33;
+
+  /* --- Tertiary: Clear Sky Blue --- */
+  --color-tertiary: #005a8c;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #0073b2;
+  --color-on-tertiary-container: #e9f2ff;
+  --color-tertiary-fixed: #cee5ff;
+  --color-tertiary-fixed-dim: #96ccff;
+  --color-on-tertiary-fixed: #001d32;
+  --color-on-tertiary-fixed-variant: #004a75;
+
+  /* --- Error --- */
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  /* --- Neutral Surfaces --- */
+  --color-surface: #ffffff;
+  --color-surface-dim: #dadada;
+  --color-surface-bright: #ffffff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f3f3f3;
+  --color-surface-container: #eeeeee;
+  --color-surface-container-high: #e8e8e8;
+  --color-surface-container-highest: #e2e2e2;
+  --color-on-surface: #1a1c1c;
+  --color-on-surface-variant: #40493d;
+  --color-inverse-surface: #2f3131;
+  --color-inverse-on-surface: #f1f1f1;
+  --color-surface-variant: #e2e2e2;
+  --color-background: #ffffff;
+  --color-on-background: #1a1c1c;
+
+  /* --- Outline --- */
+  --color-outline: #707a6c;
+  --color-outline-variant: #bfcaba;
+
+  /* --- Font Family --- */
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+
+  /* --- Border Radius --- */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-on-background);
+  font-family: var(--font-sans);
+}
+
+/* ============================================
+   CUSTOM UTILITIES
+   ============================================ */
+
+/* Batik cross-hatch background pattern */
+.batik-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230d631b' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Batik-inspired section divider */
+.batik-divider {
+  height: 4px;
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='4' viewBox='0 0 40 4' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h10v4H0V0zm10 0h10v4H10V0zm10 0h10v4H20V0zm10 0h10v4H30V0z' fill='%23795548' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+}
+
+/* Hero gradient overlay */
+.hero-gradient {
+  background: linear-gradient(
+    to bottom,
+    rgba(26, 28, 28, 0.35) 0%,
+    rgba(26, 28, 28, 0.55) 50%,
+    rgba(26, 28, 28, 0.75) 100%
+  );
+}
+
+/* Glassmorphism card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* Organic decorative blob */
+.blob-green {
+  background: rgba(13, 99, 27, 0.1);
+  border-radius: 50%;
+  filter: blur(48px);
+}
+
+.blob-brown {
+  background: rgba(122, 86, 73, 0.1);
+  border-radius: 50%;
+  filter: blur(48px);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface-container-low);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-outline-variant);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-outline);
 }
