@@ -32,3 +32,9 @@ model Artikel {
   konten    String   @db.Text
   createdAt DateTime @default(now())
 }
+
+// Untuk Statistik Pengunjung
+model Visit {
+  id        Int      @id @default(autoincrement())
+  timestamp DateTime @default(now())
+}
