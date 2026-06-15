@@ -11,6 +11,8 @@ export async function createUmkm(data: any) {
       namaPemilik: data.namaPemilik,
       kontakWa: data.kontakWa,
       fotoUrl: data.fotoUrl,
+      kategori: data.kategori,
+      kisaranHarga: data.kisaranHarga,
     },
   });
   revalidatePath("/admin/umkm");
@@ -26,6 +28,8 @@ export async function updateUmkm(id: number, data: any) {
       namaPemilik: data.namaPemilik,
       kontakWa: data.kontakWa,
       fotoUrl: data.fotoUrl,
+      kategori: data.kategori,
+      kisaranHarga: data.kisaranHarga,
     },
   });
   revalidatePath("/admin/umkm");

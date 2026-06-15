@@ -9,6 +9,7 @@ export default function UmkmClient({ initialData }: { initialData: any[] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Form State
   const [formData, setFormData] = useState({
@@ -17,27 +18,78 @@ export default function UmkmClient({ initialData }: { initialData: any[] }) {
     namaPemilik: "",
     kontakWa: "",
     fotoUrl: "",
+    kategori: "Lainnya",
+    hargaMin: "",
+    hargaMax: "",
   });
-  const [file, setFile] = useState<File | null>(null);
+  const [existingUrls, setExistingUrls] = useState<string[]>([]);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
 
   const handleOpenNew = () => {
     setEditingId(null);
-    setFormData({ namaProduk: "", deskripsi: "", namaPemilik: "", kontakWa: "", fotoUrl: "" });
-    setFile(null);
+    setFormData({
+      namaProduk: "",
+      deskripsi: "",
+      namaPemilik: "",
+      kontakWa: "",
+      fotoUrl: "",
+      kategori: "Makanan & Minuman",
+      hargaMin: "",
+      hargaMax: "",
+    });
+    setExistingUrls([]);
+    setNewFiles([]);
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (item: any) => {
     setEditingId(item.id);
+    let hMin = "";
+    let hMax = "";
+    if (item.kisaranHarga && item.kisaranHarga !== "Hubungi Kontak") {
+      if (item.kisaranHarga.includes("-")) {
+        const parts = item.kisaranHarga.split("-");
+        hMin = parts[0] ? parts[0].replace(/\D/g, "") : "";
+        hMax = parts[1] ? parts[1].replace(/\D/g, "") : "";
+      } else {
+        hMin = item.kisaranHarga.replace(/\D/g, "");
+      }
+    }
+    const urls = item.fotoUrl ? item.fotoUrl.split(",").map((u: string) => u.trim()).filter(Boolean) : [];
+    setExistingUrls(urls);
+    setNewFiles([]);
     setFormData({
       namaProduk: item.namaProduk,
       deskripsi: item.deskripsi,
       namaPemilik: item.namaPemilik,
       kontakWa: item.kontakWa,
       fotoUrl: item.fotoUrl || "",
+      kategori: item.kategori || "Makanan & Minuman",
+      hargaMin: hMin,
+      hargaMax: hMax,
     });
-    setFile(null);
     setIsModalOpen(true);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    if (existingUrls.length + newFiles.length + selectedFiles.length > 3) {
+      alert("Maksimal upload adalah 3 foto produk!");
+      e.target.value = "";
+      return;
+    }
+
+    const maxSize = 3 * 1024 * 1024; // 3MB
+    for (const f of selectedFiles) {
+      if (f.size > maxSize) {
+        alert(`Ukuran berkas "${f.name}" melebihi 3 MB!`);
+        e.target.value = "";
+        return;
+      }
+    }
+
+    setNewFiles((prev) => [...prev, ...selectedFiles]);
+    e.target.value = "";
   };
 
   const handleDelete = async (id: number) => {
@@ -52,20 +104,43 @@ export default function UmkmClient({ initialData }: { initialData: any[] }) {
     setIsLoading(true);
 
     try {
-      let finalFotoUrl = formData.fotoUrl;
+      const uploadedUrls: string[] = [];
 
-      // Upload file if selected
-      if (file) {
+      // Upload new files if selected
+      for (const file of newFiles) {
         const uploadData = new FormData();
         uploadData.append("file", file);
         const res = await fetch("/api/upload", { method: "POST", body: uploadData });
         const json = await res.json();
         if (json.url) {
-          finalFotoUrl = json.url;
+          uploadedUrls.push(json.url);
         }
       }
 
-      const payload = { ...formData, fotoUrl: finalFotoUrl };
+      const combinedUrls = [...existingUrls, ...uploadedUrls];
+      const finalFotoUrl = combinedUrls.join(",");
+
+      let kisaranHarga = "Hubungi Kontak";
+      const minVal = formData.hargaMin.trim();
+      const maxVal = formData.hargaMax.trim();
+
+      if (minVal && maxVal) {
+        kisaranHarga = `${minVal}-${maxVal}`;
+      } else if (minVal) {
+        kisaranHarga = minVal;
+      } else if (maxVal) {
+        kisaranHarga = maxVal;
+      }
+
+      const payload = {
+        namaProduk: formData.namaProduk,
+        deskripsi: formData.deskripsi,
+        namaPemilik: formData.namaPemilik,
+        kontakWa: formData.kontakWa,
+        fotoUrl: finalFotoUrl,
+        kategori: formData.kategori,
+        kisaranHarga: kisaranHarga,
+      };
 
       if (editingId) {
         await updateUmkm(editingId, payload);
@@ -85,6 +160,29 @@ export default function UmkmClient({ initialData }: { initialData: any[] }) {
     }
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  const filteredData = data.filter((item) => {
+    const q = searchTerm.toLowerCase();
+    return (
+      item.namaProduk.toLowerCase().includes(q) ||
+      item.namaPemilik.toLowerCase().includes(q) ||
+      item.deskripsi.toLowerCase().includes(q) ||
+      (item.kategori || "").toLowerCase().includes(q) ||
+      (item.kontakWa || "").includes(q)
+    );
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * ITEMS_PER_PAGE;
+  const paginatedData = filteredData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
     <>
       <div className="mb-6 flex justify-between items-center bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/20 shadow-sm">
@@ -93,6 +191,11 @@ export default function UmkmClient({ initialData }: { initialData: any[] }) {
           <input 
             type="text" 
             placeholder="Cari UMKM..." 
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full bg-surface-container-low border border-outline-variant/50 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary"
           />
         </div>
@@ -109,6 +212,7 @@ export default function UmkmClient({ initialData }: { initialData: any[] }) {
           <thead className="bg-surface-container-low text-on-surface-variant border-b border-outline-variant/20">
             <tr>
               <th className="px-6 py-4 font-semibold">Produk</th>
+              <th className="px-6 py-4 font-semibold">Kategori</th>
               <th className="px-6 py-4 font-semibold">Pemilik</th>
               <th className="px-6 py-4 font-semibold">Kontak WA</th>
               <th className="px-6 py-4 font-semibold text-right">Aksi</th>
@@ -117,10 +221,10 @@ export default function UmkmClient({ initialData }: { initialData: any[] }) {
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-on-surface-variant">Belum ada data UMKM.</td>
+                <td colSpan={5} className="px-6 py-8 text-center text-on-surface-variant">Belum ada data UMKM.</td>
               </tr>
             ) : (
-              data.map((item) => (
+              paginatedData.map((item) => (
                 <tr key={item.id} className="border-b border-outline-variant/10 hover:bg-surface-container-lowest/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -136,6 +240,9 @@ export default function UmkmClient({ initialData }: { initialData: any[] }) {
                         <p className="text-xs text-on-surface-variant truncate max-w-[200px]">{item.deskripsi}</p>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="bg-primary/10 text-primary px-2.5 py-1 rounded-md text-xs font-semibold">{item.kategori || "Lainnya"}</span>
                   </td>
                   <td className="px-6 py-4 font-medium">{item.namaPemilik}</td>
                   <td className="px-6 py-4">
@@ -158,6 +265,49 @@ export default function UmkmClient({ initialData }: { initialData: any[] }) {
         </table>
       </div>
 
+      {/* Pagination Footer */}
+      {data.length > 0 && (
+        <div className="mt-6 flex flex-col sm:flex-row justify-between items-center bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/20 shadow-sm gap-4 text-xs font-semibold text-on-surface-variant">
+          <div>
+            Menampilkan <span className="font-bold text-on-surface">{startIndex + 1}</span> - <span className="font-bold text-on-surface">{Math.min(startIndex + ITEMS_PER_PAGE, filteredData.length)}</span> dari <span className="font-bold text-on-surface">{filteredData.length}</span> UMKM
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-2.5 py-1.5 rounded-lg border border-outline-variant/30 hover:bg-surface-container-low transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              <Icon name="chevron_left" className="text-sm" /> Prev
+            </button>
+            
+            {Array.from({ length: totalPages }).map((_, idx) => {
+              const page = idx + 1;
+              return (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 rounded-lg font-bold transition-all ${
+                    currentPage === page 
+                      ? "bg-primary text-on-primary shadow-sm" 
+                      : "border border-outline-variant/30 hover:bg-surface-container-low"
+                  }`}
+                >
+                  {page}
+                </button>
+              );
+            })}
+            
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-2.5 py-1.5 rounded-lg border border-outline-variant/30 hover:bg-surface-container-low transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              Next <Icon name="chevron_right" className="text-sm" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Modal Form */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -176,12 +326,60 @@ export default function UmkmClient({ initialData }: { initialData: any[] }) {
               </div>
               
               <div>
-                <label className="block text-sm font-semibold mb-1.5">Nama Pemilik</label>
+                <label className="block text-sm font-semibold mb-1.5">Nama Pemilik/Nama Toko</label>
                 <input required type="text" value={formData.namaPemilik} onChange={(e) => setFormData({...formData, namaPemilik: e.target.value})} className="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:border-primary focus:outline-none" />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-1.5">Nomor WhatsApp (628...)</label>
+                <label className="block text-sm font-semibold mb-1.5">Kategori</label>
+                <select 
+                  required 
+                  value={formData.kategori} 
+                  onChange={(e) => setFormData({...formData, kategori: e.target.value})} 
+                  className="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:border-primary focus:outline-none"
+                >
+                  <option value="Makanan & Minuman">Makanan & Minuman</option>
+                  <option value="Kelontong">Kelontong</option>
+                  <option value="Agribisnis">Agribisnis</option>
+                  <option value="Jasa">Jasa</option>
+                  <option value="Kerajinan">Kerajinan</option>
+                  <option value="Pakaian">Pakaian</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-1.5">Kisaran Harga (Rupiah, Angka saja)</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-on-surface-variant/70 mb-1">Harga Terendah</label>
+                    <input 
+                      type="text" 
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={formData.hargaMin} 
+                      onChange={(e) => setFormData({...formData, hargaMin: e.target.value.replace(/\D/g, "")})} 
+                      placeholder="Contoh: 10000"
+                      className="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:border-primary focus:outline-none" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-on-surface-variant/70 mb-1">Harga Tertinggi</label>
+                    <input 
+                      type="text" 
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={formData.hargaMax} 
+                      onChange={(e) => setFormData({...formData, hargaMax: e.target.value.replace(/\D/g, "")})} 
+                      placeholder="Contoh: 50000"
+                      className="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:border-primary focus:outline-none" 
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-on-surface-variant/60 mt-1.5">Kosongkan kedua kolom jika ingin menampilkan "Hubungi Kontak".</p>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1.5">Nomor WhatsApp</label>
                 <input required type="text" value={formData.kontakWa} onChange={(e) => setFormData({...formData, kontakWa: e.target.value})} className="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:border-primary focus:outline-none" />
               </div>
 
@@ -191,12 +389,59 @@ export default function UmkmClient({ initialData }: { initialData: any[] }) {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-1.5">Foto Produk (Opsional)</label>
-                <div className="flex items-center gap-4">
-                  {formData.fotoUrl && !file && (
-                    <img src={formData.fotoUrl} alt="Preview" className="w-16 h-16 rounded-lg object-cover" />
+                <label className="block text-sm font-semibold mb-1.5">Foto Produk (Maksimal 3 Foto)</label>
+                <div className="flex flex-col gap-4 w-full">
+                  {/* Photo Preview Grid */}
+                  {(existingUrls.length > 0 || newFiles.length > 0) && (
+                    <div className="grid grid-cols-3 gap-3">
+                      {existingUrls.map((url, idx) => (
+                        <div key={`existing-${idx}`} className="relative aspect-square rounded-lg overflow-hidden border border-outline-variant/30 group shadow-sm bg-surface-container-low">
+                          <img src={url} alt={`Existing preview ${idx}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setExistingUrls(existingUrls.filter((_, i) => i !== idx))}
+                            className="absolute top-1 right-1 bg-error/95 hover:bg-error text-on-error p-1 rounded-full opacity-90 hover:opacity-100 transition-opacity shadow-sm"
+                            title="Hapus foto ini"
+                          >
+                            <Icon name="close" className="text-xs scale-75" />
+                          </button>
+                        </div>
+                      ))}
+                      {newFiles.map((file, idx) => {
+                        const previewUrl = URL.createObjectURL(file);
+                        return (
+                          <div key={`new-${idx}`} className="relative aspect-square rounded-lg overflow-hidden border border-outline-variant/35 group shadow-sm bg-surface-container-low">
+                            <img src={previewUrl} alt={`New preview ${idx}`} className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewFiles(newFiles.filter((_, i) => i !== idx));
+                                URL.revokeObjectURL(previewUrl);
+                              }}
+                              className="absolute top-1 right-1 bg-error/95 hover:bg-error text-on-error p-1 rounded-full opacity-90 hover:opacity-100 transition-opacity shadow-sm"
+                              title="Hapus foto ini"
+                            >
+                              <Icon name="close" className="text-xs scale-75" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
-                  <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-sm" />
+
+                  {existingUrls.length + newFiles.length < 3 ? (
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      multiple
+                      onChange={handleFileChange} 
+                      className="block w-full text-sm text-on-surface-variant file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer" 
+                    />
+                  ) : (
+                    <div className="text-xs font-semibold text-primary/80 bg-primary/5 p-3 rounded-lg border border-primary/20 text-center">
+                      Maksimal 3 foto tercapai. Hapus beberapa foto untuk mengunggah yang baru.
+                    </div>
+                  )}
                 </div>
               </div>
 
