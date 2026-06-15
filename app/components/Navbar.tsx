@@ -17,9 +17,6 @@ export default function Navbar() {
   const pathname = usePathname();
   const isLogin = pathname === "/login";
   const isAdmin = pathname.startsWith("/admin");
-
-  if (isLogin || isAdmin) return null;
-
   const isHome = pathname === "/";
 
   useEffect(() => {
@@ -44,6 +41,8 @@ export default function Navbar() {
     setMobileOpen(false);
   }, [pathname]);
 
+  if (isLogin || isAdmin) return null;
+
   // On non-home pages, always show solid bg
   const showSolid = scrolled || !isHome;
 
@@ -59,6 +58,12 @@ export default function Navbar() {
         {/* Logo */}
         <Link
           href="/"
+          onClick={(e) => {
+            if (isHome) {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
           className={`font-serif text-xl font-bold transition-colors duration-300 ${
             showSolid ? "text-primary" : "text-white"
           }`}
