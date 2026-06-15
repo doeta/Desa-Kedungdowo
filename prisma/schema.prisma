@@ -16,12 +16,14 @@ model PerangkatDesa {
 
 // Untuk Etalase UMKM / Produk Kreatif
 model ProdukUMKM {
-  id          Int      @id @default(autoincrement())
-  namaProduk  String
-  deskripsi   String   @db.Text
-  namaPemilik String
-  kontakWa    String
-  fotoUrl     String?
+  id           Int      @id @default(autoincrement())
+  namaProduk   String
+  deskripsi    String   @db.Text
+  namaPemilik  String
+  kontakWa     String
+  fotoUrl      String?
+  kategori     String   @default("Lainnya")
+  kisaranHarga String   @default("Hubungi Kontak")
 }
 
 // Untuk Berita / Kegiatan / Pengumuman
@@ -30,6 +32,8 @@ model Artikel {
   judul     String
   kategori  String   // Bisa diisi "Berita", "Pengumuman", atau "Kegiatan"
   konten    String   @db.Text
+  fotoUrl   String?
+  isSorotan Boolean  @default(false)
   createdAt DateTime @default(now())
 }
 
@@ -37,4 +41,14 @@ model Artikel {
 model Visit {
   id        Int      @id @default(autoincrement())
   timestamp DateTime @default(now())
+}
+
+// Untuk Data Demografi Penduduk
+model StatistikPenduduk {
+  id       Int    @id @default(autoincrement())
+  kategori String // "Agama", "Jenis Kelamin", "Pekerjaan", "Pendidikan", dll.
+  label    String // "Islam", "Laki-laki", "Petani", "SD", dll.
+  jumlah   Int    @default(0)
+
+  @@unique([kategori, label])
 }
