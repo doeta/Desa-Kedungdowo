@@ -2,71 +2,77 @@ import Link from "next/link";
 import Icon from "../components/Icon";
 import { logout } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import AdminSidebar from "./components/AdminSidebar";
+import AdminHeaderProfile from "./components/AdminHeaderProfile";
 
 export const metadata = { title: "Admin Dashboard | Desa Kedungdowo" };
-
-const adminMenu = [
-  { name: "Dashboard", path: "/admin", icon: "dashboard" },
-  { name: "Berita & Kegiatan", path: "/admin/berita", icon: "newspaper" },
-  { name: "UMKM Syariah", path: "/admin/umkm", icon: "storefront" },
-  { name: "Perangkat Desa", path: "/admin/perangkat", icon: "badge" },
-];
+export const dynamic = "force-dynamic";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  async function handleLogout() {
+    "use server";
+    await logout();
+    redirect("/login");
+  }
+
   return (
-    <div className="min-h-screen bg-surface-container flex flex-col md:flex-row">
-      {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col flex-shrink-0">
-        <div className="p-6 border-b border-outline-variant/20 flex items-center justify-between md:justify-center">
-          <Link href="/admin" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary text-on-primary rounded-lg flex items-center justify-center">
-              <Icon name="admin_panel_settings" className="text-xl" />
+    <div className="min-h-screen bg-[#f6f5f2] relative antialiased flex text-on-surface">
+      {/* Noise background overlay */}
+      <div 
+        className="fixed inset-0 pointer-events-none opacity-[0.03] z-0" 
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
+        }}
+      />
+
+      {/* Sidebar Navigation */}
+      <AdminSidebar logoutAction={handleLogout} />
+
+      {/* Main Content Wrapper */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
+        
+        {/* TopAppBar */}
+        <header className="flex justify-between items-center h-20 px-6 md:px-10 shrink-0 bg-white/70 backdrop-blur-xl border-b border-outline-variant/30 relative z-30">
+          
+          {/* Search Bar */}
+          <div className="flex-1 max-w-md hidden sm:block">
+            <div className="relative flex items-center w-full h-11 rounded-full bg-white border border-outline-variant/20 focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] overflow-hidden transition-all duration-300">
+              <div className="grid place-items-center h-full w-12 text-on-surface-variant/70">
+                <Icon name="search" className="text-xl" />
+              </div>
+              <input
+                className="peer h-full w-full outline-none text-sm text-on-surface bg-transparent pr-4 placeholder:text-on-surface-variant/50"
+                id="search"
+                placeholder="Cari berita, UMKM, perangkat..."
+                type="text"
+              />
             </div>
-            <span className="font-serif font-bold text-lg text-primary">Admin Panel</span>
-          </Link>
-          <div className="md:hidden">
-            <a href="/" className="text-sm text-secondary hover:underline">Ke Web Publik</a>
           </div>
-        </div>
 
-        <nav className="flex-grow p-4 flex flex-col gap-2">
-          {adminMenu.map((item) => (
-            <Link
-              key={item.path}
-              href={item.path}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors group"
-            >
-              <Icon name={item.icon} className="text-on-surface-variant/70 group-hover:text-primary transition-colors" />
-              {item.name}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t border-outline-variant/20">
-          <form action={async () => {
-            "use server";
-            await logout();
-            redirect("/login");
-          }}>
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-error hover:bg-error/10 transition-colors">
-              <Icon name="logout" />
-              Keluar
+          {/* Trailing Actions & Profile */}
+          <div className="flex items-center gap-3 ml-auto pl-12 md:pl-0">
+            <button className="w-10 h-10 flex items-center justify-center hover:bg-white/60 rounded-full transition-all text-on-surface-variant/80 border border-outline-variant/25 shadow-sm relative group bg-white/40">
+              <Icon name="notifications" className="text-xl group-hover:text-primary transition-colors" />
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-error rounded-full border border-white"></span>
             </button>
-          </form>
-          <div className="mt-4 text-center hidden md:block">
-            <a href="/" className="text-xs text-on-surface-variant hover:text-primary hover:underline">
-              ← Kembali ke Website Publik
-            </a>
+            <button className="w-10 h-10 hidden sm:flex items-center justify-center hover:bg-white/60 rounded-full transition-all text-on-surface-variant/80 border border-outline-variant/25 shadow-sm group bg-white/40">
+              <Icon name="help" className="text-xl group-hover:text-primary transition-colors" />
+            </button>
+            
+            {/* Interactive Profile Dropdown & Logout */}
+            <AdminHeaderProfile logoutAction={handleLogout} />
           </div>
-        </div>
-      </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-grow p-6 md:p-10 max-h-screen overflow-y-auto relative">
-        <div className="max-w-6xl mx-auto">
-          {children}
-        </div>
-      </main>
+        </header>
+
+        {/* Main Canvas */}
+        <main className="flex-grow overflow-y-auto p-6 md:p-10 pb-20 custom-scrollbar">
+          <div className="max-w-[1200px] mx-auto w-full">
+            {children}
+          </div>
+        </main>
+
+      </div>
     </div>
   );
 }
