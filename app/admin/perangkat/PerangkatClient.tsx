@@ -5,7 +5,20 @@ import Icon from "../../components/Icon";
 import { createPerangkat, updatePerangkat, deletePerangkat } from "./actions";
 
 export default function PerangkatClient({ initialData }: { initialData: any[] }) {
+  const JABATAN_LIST = [
+    { value: "Kepala Desa", label: "Kepala Desa" },
+    { value: "Sekretaris Desa", label: "Sekretaris Desa" },
+    { value: "Kasi Kesejahteraan & Pelayanan", label: "Kasi Kesejahteraan & Pelayanan" },
+    { value: "Kasi Pemerintahan", label: "Kasi Pemerintahan" },
+    { value: "Kaur Keuangan", label: "Kaur Keuangan" },
+    { value: "Kaur Umum & Perencanaan", label: "Kaur Umum & Perencanaan" },
+    { value: "Kepala Dusun I", label: "Kepala Dusun I (Kudus I)" },
+    { value: "Kepala Dusun II", label: "Kepala Dusun II (Kudus II)" },
+    { value: "Kepala Dusun III", label: "Kepala Dusun III (Kudus III)" },
+    { value: "Kepala Dusun IV", label: "Kepala Dusun IV (Kudus IV)" },
+  ];
   const [data, setData] = useState(initialData);
+  const existingJabatans = data.map((item) => item.jabatan);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -103,14 +116,15 @@ export default function PerangkatClient({ initialData }: { initialData: any[] })
           <thead className="bg-surface-container-low text-on-surface-variant border-b border-outline-variant/20">
             <tr>
               <th className="px-6 py-4 font-semibold w-24">Foto</th>
-              <th className="px-6 py-4 font-semibold">Nama & Jabatan</th>
+              <th className="px-6 py-4 font-semibold">Nama Lengkap</th>
+              <th className="px-6 py-4 font-semibold">Jabatan</th>
               <th className="px-6 py-4 font-semibold text-right">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-6 py-8 text-center text-on-surface-variant">Belum ada data perangkat desa.</td>
+                <td colSpan={4} className="px-6 py-8 text-center text-on-surface-variant">Belum ada data perangkat desa.</td>
               </tr>
             ) : (
               data.map((item) => (
@@ -126,7 +140,9 @@ export default function PerangkatClient({ initialData }: { initialData: any[] })
                   </td>
                   <td className="px-6 py-4">
                     <p className="font-bold text-on-background text-base">{item.nama}</p>
-                    <p className="text-xs text-on-surface-variant bg-surface-variant/50 px-2 py-0.5 rounded inline-block mt-1">{item.jabatan}</p>
+                  </td>
+                  <td className="px-6 py-4">
+                    <p className="text-sm text-on-surface-variant bg-surface-variant/50 px-3 py-1 rounded inline-block">{item.jabatan}</p>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
@@ -163,8 +179,22 @@ export default function PerangkatClient({ initialData }: { initialData: any[] })
               </div>
               
               <div>
-                <label className="block text-sm font-semibold mb-1.5">Jabatan (Misal: Kepala Desa)</label>
-                <input required type="text" value={formData.jabatan} onChange={(e) => setFormData({...formData, jabatan: e.target.value})} className="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:border-primary focus:outline-none" />
+                <label className="block text-sm font-semibold mb-1.5">Jabatan</label>
+                <select required value={formData.jabatan} onChange={(e) => setFormData({...formData, jabatan: e.target.value})} className="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:border-primary focus:outline-none appearance-none">
+                  <option value="" disabled>Pilih Jabatan</option>
+                  {JABATAN_LIST.map((jab) => {
+                    const isAlreadyTaken = existingJabatans.includes(jab.value);
+                    const isCurrentlySelected = formData.jabatan === jab.value;
+                    const disabled = isAlreadyTaken && !isCurrentlySelected;
+                    
+                    return (
+                      <option key={jab.value} value={jab.value} disabled={disabled}>
+                        {jab.label} {disabled ? "(Sudah Terisi)" : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+                <p className="text-xs text-on-surface-variant mt-1.5">Jabatan akan otomatis dipetakan ke kotak di halaman struktur organisasi publik.</p>
               </div>
 
               <div>
@@ -173,7 +203,18 @@ export default function PerangkatClient({ initialData }: { initialData: any[] })
                   {formData.fotoUrl && !file && (
                     <img src={formData.fotoUrl} alt="Preview" className="w-16 h-16 rounded-full object-cover border border-outline-variant/20" />
                   )}
-                  <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-sm" />
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={(e) => setFile(e.target.files?.[0] || null)} 
+                    className="block w-full text-sm text-on-surface-variant
+                      file:mr-4 file:py-2.5 file:px-4
+                      file:rounded-lg file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-primary/10 file:text-primary
+                      hover:file:bg-primary/20
+                      cursor-pointer transition-colors"
+                  />
                 </div>
               </div>
 

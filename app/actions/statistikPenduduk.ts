@@ -82,6 +82,7 @@ export async function createStatistikPenduduk(formData: FormData) {
 
   revalidatePath('/admin');
   revalidatePath('/admin/penduduk');
+  revalidatePath('/profil');
 }
 
 // Update existing stat entry
@@ -108,6 +109,7 @@ export async function updateStatistikPenduduk(id: number, formData: FormData) {
 
   revalidatePath('/admin');
   revalidatePath('/admin/penduduk');
+  revalidatePath('/profil');
 }
 
 // Delete stat entry
@@ -118,6 +120,7 @@ export async function deleteStatistikPenduduk(id: number) {
 
   revalidatePath('/admin');
   revalidatePath('/admin/penduduk');
+  revalidatePath('/profil');
 }
 
 // Seed basic categories if database is empty

@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import Icon from "../../components/Icon";
 import Link from "next/link";
 
 export default function AdminHeaderProfile({ logoutAction }: { logoutAction: () => Promise<void> }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -19,10 +21,14 @@ export default function AdminHeaderProfile({ logoutAction }: { logoutAction: () 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = async () => {
-    if (confirm("Apakah Anda yakin ingin keluar?")) {
-      await logoutAction();
-    }
+  const handleLogout = () => {
+    setIsOpen(false);
+    setIsLogoutModalOpen(true);
+  };
+
+  const confirmLogout = async () => {
+    setIsLogoutModalOpen(false);
+    await logoutAction();
   };
 
   return (
@@ -76,6 +82,33 @@ export default function AdminHeaderProfile({ logoutAction }: { logoutAction: () 
           </div>
         </div>
       )}
+
+      {/* Logout Confirmation Modal */}
+      {isLogoutModalOpen && typeof document !== 'undefined'
+        ? createPortal(
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+              <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl border border-outline-variant/20 animate-slideUpAndFade">
+                <h3 className="text-xl font-bold text-on-surface mb-2">Konfirmasi Keluar</h3>
+                <p className="text-on-surface-variant/80 mb-6 font-medium">Apakah Anda yakin ingin keluar dari halaman admin?</p>
+                <div className="flex justify-end gap-3 mt-8">
+                  <button
+                    onClick={() => setIsLogoutModalOpen(false)}
+                    className="px-5 py-2.5 rounded-xl text-sm font-semibold text-on-surface-variant hover:bg-on-surface-variant/10 transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={confirmLogout}
+                    className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-error text-white hover:bg-error/90 transition-colors shadow-sm shadow-error/20"
+                  >
+                    Ya, Keluar
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }
