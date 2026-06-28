@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Source_Serif_4, Plus_Jakarta_Sans } from "next/font/google";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ChatBotDesa from "./components/ChatBotDesa";
 import "./globals.css";
 
 const sourceSerif = Source_Serif_4({
@@ -54,7 +55,7 @@ export default function RootLayout({
         <Navbar />
         <main className="flex-grow">{children}</main>
         <Footer />
-
+        <ChatBotDesa />
       </body>
     </html>
   );
