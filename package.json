@@ -10,8 +10,11 @@
     "seed": "node -r ts-node/register prisma/seed.ts"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.2",
+    "@ai-sdk/react": "^4.0.5",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "ai": "^7.0.4",
     "framer-motion": "^12.40.0",
     "jose": "^6.2.3",
     "next": "16.2.9",
@@ -30,7 +33,7 @@
     "eslint-config-next": "16.2.9",
     "prisma": "^7.8.0",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "ts-node": "^10"
+    "ts-node": "^10",
+    "typescript": "^5"
   }
 }
