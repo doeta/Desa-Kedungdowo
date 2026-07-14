@@ -227,7 +227,7 @@ export default async function ProfilPage() {
                   Jejak Sejarah <span className="italic text-on-surface-variant font-light">Desa</span>
                 </h2>
                 <div className="text-base text-on-surface-variant space-y-6 mb-10">
-                  <p className="leading-relaxed first-letter:float-left first-letter:font-serif first-letter:text-[5rem] first-letter:leading-[4.5rem] first-letter:pr-3 first-letter:pt-2 first-letter:text-primary first-letter:font-bold">
+                  <p className="leading-relaxed">
                     Berdirinya Desa Kedungdowo tidak terlepas dari Kraton Surakarta Hadiningrat pada masa Periode ke IV. Seorang penghulu kraton bernama <strong>Kyai Dul Jalal Awal</strong> mengembangkan misi dakwah Islamiyah dan menetap di sebuah hutan yang dinamakan <strong className="text-on-surface">Alas Jogo Paten</strong>.
                   </p>
                   <p className="leading-relaxed">

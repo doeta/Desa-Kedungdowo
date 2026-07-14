@@ -7,28 +7,34 @@ import { AnimatePresence, motion } from "framer-motion";
 
 export default function ChatBotDesa() {
   const [isOpen, setIsOpen] = useState(false);
+  
   const [input, setInput] = useState("");
-  
-  const { messages, status, sendMessage } = useChat();
-  const isLoading = status === 'submitted' || status === 'streaming';
-  
+  const { messages, status, sendMessage, error } = useChat();
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
   };
-  
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
-    sendMessage({ role: "user", parts: [{ type: "text", text: input }] } as any);
+    if (!input.trim()) return;
+    
+    sendMessage({ 
+      role: "user", 
+      parts: [{ type: "text", text: input }] 
+    });
+    
     setInput("");
   };
+
+  const isLoading = status === 'submitted' || status === 'streaming';
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, error]);
 
   return (
     <motion.div 
@@ -102,6 +108,16 @@ export default function ChatBotDesa() {
                   <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "0ms" }}></div>
                   <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "150ms" }}></div>
                   <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                </div>
+              )}
+              {error && (
+                <div className="flex flex-col max-w-[85%] self-start items-start">
+                  <span className="text-[10px] text-red-500 font-semibold mb-1 px-1">
+                    Sistem
+                  </span>
+                  <div className="px-4 py-2.5 rounded-2xl text-sm leading-relaxed bg-red-50 text-red-700 rounded-tl-sm border border-red-100 shadow-sm">
+                    Mohon maaf, Asisten Desa sedang melayani banyak antrean. Silakan hubungi via WhatsApp.
+                  </div>
                 </div>
               )}
               <div ref={messagesEndRef} />

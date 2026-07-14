@@ -28,13 +28,25 @@ model ProdukUMKM {
 
 // Untuk Berita / Kegiatan / Pengumuman
 model Artikel {
-  id        Int      @id @default(autoincrement())
+  id        Int           @id @default(autoincrement())
   judul     String
-  kategori  String   // Bisa diisi "Berita", "Pengumuman", atau "Kegiatan"
-  konten    String   @db.Text
+  kategori  String        // Bisa diisi "Berita", "Pengumuman", atau "Kegiatan"
+  konten    String        @db.Text
   fotoUrl   String?
-  isSorotan Boolean  @default(false)
-  createdAt DateTime @default(now())
+  isSorotan Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  bloks     ArtikelBlok[]
+}
+
+// Blok konten untuk artikel (teks atau gambar, seperti cell di Google Colab)
+model ArtikelBlok {
+  id        Int      @id @default(autoincrement())
+  artikelId Int
+  artikel   Artikel  @relation(fields: [artikelId], references: [id], onDelete: Cascade)
+  tipe      String   // "teks" atau "gambar"
+  konten    String   @db.Text  // isi teks atau URL gambar
+  caption   String?  // caption opsional (untuk blok gambar)
+  urutan    Int      // urutan tampil (0, 1, 2, ...)
 }
 
 // Untuk Statistik Pengunjung

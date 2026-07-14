@@ -6,6 +6,7 @@ export const metadata = { title: "Manajemen Berita | Admin Desa Kedungdowo" };
 export default async function AdminBeritaPage() {
   const data = await prisma.artikel.findMany({
     orderBy: { createdAt: "desc" },
+    include: { bloks: { orderBy: { urutan: "asc" } } },
   });
 
   return (

@@ -4,6 +4,18 @@ import { useState } from "react";
 import Icon from "../../components/Icon";
 import { createBerita, updateBerita, deleteBerita, toggleSorotanUtama } from "./actions";
 
+type EditorBlok = {
+  id: string; // client-side ID for React key
+  tipe: "teks" | "gambar";
+  konten: string;
+  caption: string;
+  file?: File | null; // for new image uploads
+};
+
+function generateId() {
+  return Math.random().toString(36).substring(2, 9);
+}
+
 export default function BeritaClient({ initialData }: { initialData: any[] }) {
   const [data, setData] = useState(initialData);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,10 +56,12 @@ export default function BeritaClient({ initialData }: { initialData: any[] }) {
   const [formData, setFormData] = useState({
     judul: "",
     kategori: "Berita",
-    konten: "",
     fotoUrl: "",
   });
   const [file, setFile] = useState<File | null>(null);
+
+  // Block editor state
+  const [bloks, setBloks] = useState<EditorBlok[]>([]);
 
   // Helper to trigger custom toasts
   const showToast = (message: string, type: "success" | "error" = "success") => {
@@ -59,8 +73,9 @@ export default function BeritaClient({ initialData }: { initialData: any[] }) {
 
   const handleOpenNew = (defaultCategory: string) => {
     setEditingId(null);
-    setFormData({ judul: "", kategori: defaultCategory, konten: "", fotoUrl: "" });
+    setFormData({ judul: "", kategori: defaultCategory, fotoUrl: "" });
     setFile(null);
+    setBloks([{ id: generateId(), tipe: "teks", konten: "", caption: "" }]);
     setIsModalOpen(true);
   };
 
@@ -69,11 +84,61 @@ export default function BeritaClient({ initialData }: { initialData: any[] }) {
     setFormData({
       judul: item.judul,
       kategori: item.kategori,
-      konten: item.konten,
       fotoUrl: item.fotoUrl || "",
     });
     setFile(null);
+
+    // Load existing bloks or convert legacy content
+    if (item.bloks && item.bloks.length > 0) {
+      setBloks(item.bloks.map((b: any) => ({
+        id: generateId(),
+        tipe: b.tipe as "teks" | "gambar",
+        konten: b.konten,
+        caption: b.caption || "",
+        file: null,
+      })));
+    } else {
+      // Legacy: convert old single content to a text block
+      const legacyBloks: EditorBlok[] = [];
+      if (item.fotoUrl) {
+        legacyBloks.push({ id: generateId(), tipe: "gambar", konten: item.fotoUrl, caption: "" });
+      }
+      if (item.konten) {
+        legacyBloks.push({ id: generateId(), tipe: "teks", konten: item.konten, caption: "" });
+      }
+      if (legacyBloks.length === 0) {
+        legacyBloks.push({ id: generateId(), tipe: "teks", konten: "", caption: "" });
+      }
+      setBloks(legacyBloks);
+    }
     setIsModalOpen(true);
+  };
+
+  // Block manipulation helpers
+  const addBlok = (tipe: "teks" | "gambar") => {
+    setBloks([...bloks, { id: generateId(), tipe, konten: "", caption: "" }]);
+  };
+
+  const removeBlok = (index: number) => {
+    if (bloks.length <= 1) {
+      showToast("Artikel harus memiliki minimal 1 blok konten.", "error");
+      return;
+    }
+    setBloks(bloks.filter((_, i) => i !== index));
+  };
+
+  const moveBlok = (index: number, direction: "up" | "down") => {
+    const newBloks = [...bloks];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newBloks.length) return;
+    [newBloks[index], newBloks[targetIndex]] = [newBloks[targetIndex], newBloks[index]];
+    setBloks(newBloks);
+  };
+
+  const updateBlok = (index: number, field: keyof EditorBlok, value: any) => {
+    const newBloks = [...bloks];
+    (newBloks[index] as any)[field] = value;
+    setBloks(newBloks);
   };
 
   const handleDeleteClick = (id: number) => {
@@ -124,41 +189,81 @@ export default function BeritaClient({ initialData }: { initialData: any[] }) {
     e.preventDefault();
     setIsLoading(true);
 
-    // Form validation checks
+    // Form validation
     if (!formData.judul.trim()) {
       showToast("Judul wajib diisi!", "error");
       setIsLoading(false);
       return;
     }
-    if (!formData.konten.trim()) {
-      showToast("Konten wajib diisi!", "error");
+    
+    const hasContent = bloks.some(b => b.konten.trim() || b.file);
+    if (!hasContent) {
+      showToast("Konten wajib diisi! Tambahkan minimal 1 blok dengan isi.", "error");
       setIsLoading(false);
       return;
     }
 
     try {
+      // Upload hero/thumbnail image if present
       let finalFotoUrl = formData.fotoUrl;
-      
-      // Handle file upload first if a new file is selected
       if (file) {
         const uploadData = new FormData();
         uploadData.append("file", file);
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: uploadData,
-        });
-        
+        const res = await fetch("/api/upload", { method: "POST", body: uploadData });
         if (res.ok) {
           const result = await res.json();
           finalFotoUrl = result.url;
         } else {
-          showToast("Gagal mengunggah gambar pendukung.", "error");
+          showToast("Gagal mengunggah gambar thumbnail.", "error");
           setIsLoading(false);
           return;
         }
       }
 
-      const payload = { ...formData, fotoUrl: finalFotoUrl };
+      // Upload images in bloks that have files
+      const processedBloks = [];
+      for (let i = 0; i < bloks.length; i++) {
+        const b = bloks[i];
+        if (b.tipe === "gambar" && b.file) {
+          const uploadData = new FormData();
+          uploadData.append("file", b.file);
+          const res = await fetch("/api/upload", { method: "POST", body: uploadData });
+          if (res.ok) {
+            const result = await res.json();
+            processedBloks.push({
+              tipe: b.tipe,
+              konten: result.url,
+              caption: b.caption || undefined,
+              urutan: i,
+            });
+          } else {
+            showToast(`Gagal mengunggah gambar blok #${i + 1}.`, "error");
+            setIsLoading(false);
+            return;
+          }
+        } else if (b.konten.trim()) {
+          processedBloks.push({
+            tipe: b.tipe,
+            konten: b.konten,
+            caption: b.caption || undefined,
+            urutan: i,
+          });
+        }
+      }
+
+      // Build konten fallback from text bloks
+      const kontenFallback = processedBloks
+        .filter(b => b.tipe === "teks")
+        .map(b => b.konten)
+        .join("\n\n");
+
+      const payload = {
+        judul: formData.judul,
+        kategori: formData.kategori,
+        konten: kontenFallback || "(konten blok)",
+        fotoUrl: finalFotoUrl,
+        bloks: processedBloks,
+      };
 
       if (editingId) {
         await updateBerita(editingId, payload);
@@ -375,10 +480,10 @@ export default function BeritaClient({ initialData }: { initialData: any[] }) {
         </div>
       )}
 
-      {/* Modal Dialog Form */}
+      {/* Modal Dialog Form — Block Editor */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up">
+          <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up">
             {/* Modal Header */}
             <div className="p-6 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low/30">
               <h2 className="font-serif text-lg font-bold">
@@ -393,58 +498,157 @@ export default function BeritaClient({ initialData }: { initialData: any[] }) {
             </div>
             
             {/* Form */}
-            <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-grow flex flex-col gap-4">
+            <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-grow flex flex-col gap-5">
+              {/* Judul */}
               <div>
                 <label className="block text-sm font-semibold mb-1.5">Judul</label>
                 <input required type="text" value={formData.judul} onChange={(e) => setFormData({...formData, judul: e.target.value})} className="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:border-primary focus:outline-none" />
               </div>
-              
+
+              {/* Category selector (hidden for pengumuman) */}
               {formData.kategori !== "Pengumuman" && (
-                <div>
-                  <label className="block text-sm font-semibold mb-1.5">Gambar / Foto Utama</label>
-                  <div className="flex items-center gap-4">
-                    {(file || formData.fotoUrl) && (
-                      <div className="w-16 h-16 rounded overflow-hidden bg-surface-container flex-shrink-0 border border-outline-variant/20">
-                        <img 
-                          src={file ? URL.createObjectURL(file) : formData.fotoUrl} 
-                          alt="Preview" 
-                          className="w-full h-full object-cover" 
-                        />
-                      </div>
-                    )}
-                    <input 
-                      type="file" 
-                      accept="image/*"
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          setFile(e.target.files[0]);
-                        }
-                      }}
-                      className="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-4 py-2 text-sm focus:border-primary focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" 
-                    />
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-semibold mb-1.5">Kategori</label>
+                    <select required value={formData.kategori} onChange={(e) => setFormData({...formData, kategori: e.target.value})} className="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:border-primary focus:outline-none">
+                      <option value="Berita">Berita</option>
+                      <option value="Kegiatan">Kegiatan</option>
+                      <option value="Infrastruktur">Infrastruktur</option>
+                      <option value="Ekonomi">Ekonomi</option>
+                    </select>
+                  </div>
+
+                  {/* Thumbnail / Hero image */}
+                  <div className="flex-1">
+                    <label className="block text-sm font-semibold mb-1.5">Thumbnail / Gambar Utama</label>
+                    <div className="flex items-center gap-3">
+                      {(file || formData.fotoUrl) && (
+                        <div className="w-10 h-10 rounded overflow-hidden bg-surface-container flex-shrink-0 border border-outline-variant/20">
+                          <img src={file ? URL.createObjectURL(file) : formData.fotoUrl} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <input 
+                        type="file" accept="image/*"
+                        onChange={(e) => { if (e.target.files?.[0]) setFile(e.target.files[0]); }}
+                        className="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-3 py-1.5 text-xs focus:border-primary focus:outline-none file:mr-3 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" 
+                      />
+                    </div>
                   </div>
                 </div>
               )}
-              
-              {/* Category selector is hidden and automatically preset for announcements */}
-              {formData.kategori !== "Pengumuman" && (
-                <div>
-                  <label className="block text-sm font-semibold mb-1.5">Kategori</label>
-                  <select required value={formData.kategori} onChange={(e) => setFormData({...formData, kategori: e.target.value})} className="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:border-primary focus:outline-none">
-                    <option value="Berita">Berita</option>
-                    <option value="Kegiatan">Kegiatan</option>
-                    <option value="Infrastruktur">Infrastruktur</option>
-                    <option value="Ekonomi">Ekonomi</option>
-                  </select>
-                </div>
-              )}
 
+              {/* Block Editor Section */}
               <div>
-                <label className="block text-sm font-semibold mb-1.5">Konten / Isi Artikel</label>
-                <textarea required rows={8} value={formData.konten} onChange={(e) => setFormData({...formData, konten: e.target.value})} className="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:border-primary focus:outline-none resize-none" placeholder="Tulis ringkasan atau isi di sini..." />
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-sm font-semibold flex items-center gap-2">
+                    <Icon name="view_agenda" className="text-base text-primary" />
+                    Konten Artikel
+                  </label>
+                  <span className="text-[10px] text-on-surface-variant/50 font-medium">{bloks.length} blok</span>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {bloks.map((blok, index) => (
+                    <div key={blok.id} className="group border border-outline-variant/30 rounded-xl bg-surface-container-low/50 overflow-hidden transition-all hover:border-outline-variant/60">
+                      {/* Block Header */}
+                      <div className="flex items-center justify-between px-4 py-2 bg-surface-container-low/80 border-b border-outline-variant/20">
+                        <div className="flex items-center gap-2">
+                          <Icon 
+                            name={blok.tipe === "teks" ? "text_fields" : "image"} 
+                            className={`text-sm ${blok.tipe === "teks" ? "text-blue-600" : "text-green-600"}`} 
+                          />
+                          <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
+                            {blok.tipe === "teks" ? "Teks" : "Gambar"}
+                          </span>
+                          <span className="text-[10px] text-on-surface-variant/40">#{index + 1}</span>
+                        </div>
+                        <div className="flex items-center gap-0.5">
+                          <button type="button" onClick={() => moveBlok(index, "up")} disabled={index === 0}
+                            className="p-1 rounded hover:bg-surface-container transition-colors disabled:opacity-20 text-on-surface-variant"
+                            title="Pindah ke atas"
+                          >
+                            <Icon name="keyboard_arrow_up" className="text-base" />
+                          </button>
+                          <button type="button" onClick={() => moveBlok(index, "down")} disabled={index === bloks.length - 1}
+                            className="p-1 rounded hover:bg-surface-container transition-colors disabled:opacity-20 text-on-surface-variant"
+                            title="Pindah ke bawah"
+                          >
+                            <Icon name="keyboard_arrow_down" className="text-base" />
+                          </button>
+                          <button type="button" onClick={() => removeBlok(index)}
+                            className="p-1 rounded hover:bg-error/10 hover:text-error transition-colors text-on-surface-variant/50 ml-1"
+                            title="Hapus blok"
+                          >
+                            <Icon name="close" className="text-base" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Block Content */}
+                      <div className="p-4">
+                        {blok.tipe === "teks" ? (
+                          <textarea
+                            rows={4}
+                            value={blok.konten}
+                            onChange={(e) => updateBlok(index, "konten", e.target.value)}
+                            className="w-full bg-surface-container border border-outline-variant/40 rounded-lg px-4 py-2.5 text-sm focus:border-primary focus:outline-none resize-y min-h-[80px]"
+                            placeholder="Tulis paragraf konten di sini..."
+                          />
+                        ) : (
+                          <div className="flex flex-col gap-3">
+                            {/* Image preview */}
+                            {(blok.file || blok.konten) && (
+                              <div className="w-full max-h-48 rounded-lg overflow-hidden bg-surface-container border border-outline-variant/20">
+                                <img 
+                                  src={blok.file ? URL.createObjectURL(blok.file) : blok.konten} 
+                                  alt="Preview" 
+                                  className="w-full h-full object-contain max-h-48" 
+                                />
+                              </div>
+                            )}
+                            <input 
+                              type="file" accept="image/*"
+                              onChange={(e) => { 
+                                if (e.target.files?.[0]) {
+                                  updateBlok(index, "file", e.target.files[0]);
+                                  updateBlok(index, "konten", ""); // clear old URL
+                                }
+                              }}
+                              className="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-3 py-2 text-xs focus:border-primary focus:outline-none file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" 
+                            />
+                            <input 
+                              type="text"
+                              value={blok.caption}
+                              onChange={(e) => updateBlok(index, "caption", e.target.value)}
+                              placeholder="Caption gambar (opsional)..."
+                              className="w-full bg-surface-container border border-outline-variant/40 rounded-lg px-4 py-2 text-xs focus:border-primary focus:outline-none italic"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add Block Buttons */}
+                <div className="flex items-center gap-2 mt-4">
+                  <div className="h-px bg-outline-variant/20 flex-grow" />
+                  <button type="button" onClick={() => addBlok("teks")}
+                    className="flex items-center gap-1.5 px-3.5 py-2 border border-dashed border-outline-variant/40 rounded-lg text-xs font-semibold text-on-surface-variant hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
+                  >
+                    <Icon name="text_fields" className="text-sm" /> + Teks
+                  </button>
+                  <button type="button" onClick={() => addBlok("gambar")}
+                    className="flex items-center gap-1.5 px-3.5 py-2 border border-dashed border-outline-variant/40 rounded-lg text-xs font-semibold text-on-surface-variant hover:border-green-600 hover:text-green-600 hover:bg-green-50 transition-all"
+                  >
+                    <Icon name="image" className="text-sm" /> + Gambar
+                  </button>
+                  <div className="h-px bg-outline-variant/20 flex-grow" />
+                </div>
               </div>
 
-              <div className="mt-4 flex justify-end gap-3 border-t border-outline-variant/20 pt-6">
+              {/* Submit */}
+              <div className="mt-2 flex justify-end gap-3 border-t border-outline-variant/20 pt-6">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 text-sm font-bold text-on-surface-variant hover:bg-surface-container rounded-lg">
                   Batal
                 </button>

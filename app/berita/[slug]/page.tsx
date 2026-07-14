@@ -41,11 +41,14 @@ export default async function DetailBeritaPage({ params }: { params: Promise<{ s
 
   const artikel = await prisma.artikel.findUnique({
     where: { id: artikelId },
+    include: { bloks: { orderBy: { urutan: "asc" } } },
   });
 
   if (!artikel) {
     return notFound();
   }
+
+  const hasBloks = artikel.bloks && artikel.bloks.length > 0;
 
   // Fetch recommendations
   const rekomendasiList = await prisma.artikel.findMany({
@@ -99,6 +102,7 @@ export default async function DetailBeritaPage({ params }: { params: Promise<{ s
           </div>
         </header>
 
+        {/* Hero image (thumbnail) */}
         {artikel.fotoUrl && (
           <div className="mb-12 w-full h-[300px] md:h-[500px] rounded-[2rem] overflow-hidden shadow-md border border-outline-variant/20">
             <img src={artikel.fotoUrl} alt={artikel.judul} className="w-full h-full object-cover" />
@@ -111,27 +115,68 @@ export default async function DetailBeritaPage({ params }: { params: Promise<{ s
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-bl-full pointer-events-none" />
           
           <div className="relative z-10 prose prose-lg prose-headings:font-serif prose-headings:text-on-surface prose-p:text-on-surface-variant prose-p:leading-relaxed prose-a:text-secondary max-w-none">
-            {/* We process raw text into paragraphs. In a real app this could be rich HTML/Markdown */}
-            {artikel.konten.split("\n").map((paragraph, index) => {
-              if (!paragraph.trim()) return null;
-              // If it's the very first paragraph, add a dropcap effect matching the design theme
-              if (index === 0) {
+            {hasBloks ? (
+              /* Render block-based content */
+              artikel.bloks.map((blok, index) => {
+                if (blok.tipe === "teks") {
+                  // Split text into paragraphs
+                  return blok.konten.split("\n").map((paragraph, pIndex) => {
+                    if (!paragraph.trim()) return null;
+                    if (index === 0 && pIndex === 0) {
+                      return (
+                        <p key={`${blok.id}-${pIndex}`} className="text-lg md:text-xl text-on-surface leading-relaxed mb-6">
+                          {paragraph}
+                        </p>
+                      );
+                    }
+                    return (
+                      <p key={`${blok.id}-${pIndex}`} className="mb-6">
+                        {paragraph}
+                      </p>
+                    );
+                  });
+                } else if (blok.tipe === "gambar") {
+                  return (
+                    <figure key={blok.id} className="my-10">
+                      <div className="w-full rounded-2xl overflow-hidden shadow-md border border-outline-variant/20">
+                        <img 
+                          src={blok.konten} 
+                          alt={blok.caption || artikel.judul} 
+                          className="w-full h-auto object-cover not-prose" 
+                        />
+                      </div>
+                      {blok.caption && (
+                        <figcaption className="mt-3 text-center text-sm italic text-on-surface-variant/70 not-prose">
+                          {blok.caption}
+                        </figcaption>
+                      )}
+                    </figure>
+                  );
+                }
+                return null;
+              })
+            ) : (
+              /* Fallback: render legacy single-content format */
+              artikel.konten.split("\n").map((paragraph, index) => {
+                if (!paragraph.trim()) return null;
+                if (index === 0) {
+                  return (
+                    <p key={index} className="text-lg md:text-xl text-on-surface leading-relaxed mb-6">
+                      {paragraph}
+                    </p>
+                  );
+                }
                 return (
-                  <p key={index} className="text-lg md:text-xl text-on-surface leading-relaxed mb-6 first-letter:float-left first-letter:font-serif first-letter:text-[4rem] first-letter:leading-[3.5rem] first-letter:pr-3 first-letter:pt-2 first-letter:text-primary first-letter:font-bold">
+                  <p key={index} className="mb-6">
                     {paragraph}
                   </p>
                 );
-              }
-              return (
-                <p key={index} className="mb-6">
-                  {paragraph}
-                </p>
-              );
-            })}
+              })
+            )}
           </div>
         </article>
 
-        {/* Social Share / Interaction (Placeholder) */}
+        {/* Social Share / Interaction */}
         <div className="flex items-center gap-4 mt-10 justify-center">
           <span className="text-sm font-medium text-on-surface-variant">Bagikan artikel:</span>
           <button className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center hover:bg-primary-container hover:text-on-primary-container transition-colors text-on-surface">
