@@ -1,136 +1,146 @@
 import { prisma } from "@/lib/prisma";
-import { extractIdFromSlug, getBeritaUrl } from "@/lib/slug";
+import { extractIdFromSlug, getBeritaUrl, slugify } from "@/lib/slug";
 import Icon from "../../components/Icon";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import ShareButtons from "./ShareButtons";
 
-export const revalidate = 0; // Disable static rendering for dynamic updates
+export const revalidate = 0;
 
 const getChipColor = (kategori: string) => {
   const kat = kategori.toLowerCase();
-  if (kat.includes("pembangunan") || kat.includes("infrastruktur")) return "bg-surface-container text-on-surface";
-  if (kat.includes("ekonomi") || kat.includes("umkm")) return "bg-secondary-container text-on-secondary-container";
-  if (kat.includes("pertanian") || kat.includes("peternakan")) return "bg-[#e9f2ff] text-[#004a75]";
-  if (kat.includes("kesehatan")) return "bg-[#ffdad6] text-[#93000a]";
-  if (kat.includes("pendidikan")) return "bg-tertiary-container text-on-tertiary-container";
+  if (kat.includes("kegiatan")) return "bg-primary text-on-primary";
+  if (kat.includes("berita")) return "bg-secondary text-on-secondary";
+  if (kat.includes("pembangunan") || kat.includes("infrastruktur")) return "bg-tertiary text-on-tertiary";
   return "bg-primary text-on-primary";
 };
 
-// Generate dynamic metadata based on the article
+async function findArtikelBySlug(slug: string) {
+  const all = await prisma.artikel.findMany({
+    include: { bloks: { orderBy: { urutan: "asc" } } },
+    orderBy: { createdAt: "desc" }
+  });
+
+  const matched = all.find((a) => slugify(a.judul) === slug);
+  if (matched) return matched;
+
+  const artikelId = extractIdFromSlug(slug);
+  if (artikelId) {
+    return all.find((a) => a.id === artikelId) || null;
+  }
+
+  return null;
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
-  const artikelId = extractIdFromSlug(resolvedParams.slug);
-  if (!artikelId) return { title: "Berita Tidak Ditemukan" };
+  const artikel = await findArtikelBySlug(resolvedParams.slug);
   
-  const artikel = await prisma.artikel.findUnique({
-    where: { id: artikelId },
-    select: { judul: true }
-  });
-  
-  if (!artikel) return { title: "Berita Tidak Ditemukan" };
-  return { title: `${artikel.judul} - Desa Kedungdowo` };
+  if (!artikel) return { title: "Berita Tidak Ditemukan - Desa Kedungdowo" };
+  return { 
+    title: `${artikel.judul} - Desa Kedungdowo`,
+    description: artikel.konten.substring(0, 150) + "..."
+  };
 }
 
 export default async function DetailBeritaPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
-  const artikelId = extractIdFromSlug(resolvedParams.slug);
+  const artikel = await findArtikelBySlug(resolvedParams.slug);
   
-  if (!artikelId) {
-    return notFound();
-  }
-
-  const artikel = await prisma.artikel.findUnique({
-    where: { id: artikelId },
-    include: { bloks: { orderBy: { urutan: "asc" } } },
-  });
-
   if (!artikel) {
     return notFound();
   }
 
   const hasBloks = artikel.bloks && artikel.bloks.length > 0;
 
-  // Fetch recommendations
   const rekomendasiList = await prisma.artikel.findMany({
     where: {
-      id: { not: artikelId },
+      id: { not: artikel.id },
       kategori: { not: "Pengumuman" }
     },
     orderBy: { createdAt: "desc" },
     take: 3
   });
 
-  return (
-    <div className="relative min-h-screen bg-surface">
-      {/* Ambient Pattern */}
-      <div className="absolute inset-0 z-0 bg-[radial-gradient(#707a6c_1px,transparent_1px),radial-gradient(#707a6c_1px,transparent_1px)] bg-[size:40px_40px] bg-[position:0_0,20px_20px] opacity-[0.03] pointer-events-none" />
-      
-      {/* Header Decorative Background */}
-      <div className="absolute top-0 left-0 right-0 h-[400px] bg-gradient-to-b from-surface-container-low to-transparent z-0" />
+  const formattedDate = new Date(artikel.createdAt).toLocaleDateString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
 
-      <main className="relative z-10 w-full max-w-[1000px] mx-auto px-6 pt-32 pb-20 md:pb-32">
-        {/* Navigation */}
-        <div className="mb-12">
-          <Link href="/berita" className="inline-flex items-center gap-2 text-sm font-semibold text-outline hover:text-secondary transition-colors">
-            <Icon name="arrow_back" className="text-lg" /> Kembali ke Berita
-          </Link>
-        </div>
+  return (
+    <div className="relative min-h-screen bg-background">
+      <main className="relative z-10 w-full max-w-[800px] mx-auto px-6 pt-10 pb-20 md:pb-32">
+        
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-xs font-medium text-on-surface-variant/60 mb-10 pt-8 md:pt-16">
+          <Link href="/" className="hover:text-primary transition-colors">Beranda</Link>
+          <Icon name="chevron_right" className="text-xs" />
+          <Link href="/berita" className="hover:text-primary transition-colors">Berita</Link>
+          <Icon name="chevron_right" className="text-xs" />
+          <span className="text-on-surface-variant line-clamp-1 max-w-[200px]">{artikel.judul}</span>
+        </nav>
 
         {/* Article Header */}
-        <header className="mb-16">
-          <div className="flex flex-wrap items-center gap-4 mb-6">
-            <span className={`${getChipColor(artikel.kategori)} px-3 py-1 rounded-full text-xs font-bold shadow-sm`}>
+        <header className="mb-10">
+          {/* Category & Date */}
+          <div className="flex flex-wrap items-center gap-3 mb-5">
+            <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${getChipColor(artikel.kategori)}`}>
               {artikel.kategori}
             </span>
-            <div className="flex items-center gap-2 text-on-surface-variant text-sm font-medium">
-              <Icon name="calendar_today" className="text-[18px]" />
-              <time dateTime={artikel.createdAt.toISOString()}>
-                {new Date(artikel.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
-              </time>
-              <span className="mx-1">•</span>
-              <Icon name="person" className="text-[18px]" />
-              <span>Pemerintah Desa</span>
-            </div>
           </div>
-          
-          <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-on-surface leading-[1.15] tracking-tight mb-8">
+
+          {/* Title */}
+          <h1 className="font-serif text-3xl md:text-[2.75rem] font-bold text-primary leading-[1.25] tracking-tight mb-6 drop-shadow-sm">
             {artikel.judul}
           </h1>
-          
-          <div className="w-full h-1 bg-outline-variant/30 rounded-full overflow-hidden">
-            <div className="w-24 h-full bg-primary rounded-full"></div>
+
+          {/* Author Row */}
+          <div className="flex flex-wrap items-center justify-between gap-4 py-5 border-y border-outline-variant/20 bg-surface-container-lowest/50">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold flex items-center justify-center text-sm shadow-sm">
+                <Icon name="edit_document" className="text-xl" />
+              </div>
+              <div className="text-sm">
+                <p className="font-bold text-on-surface leading-tight">Redaksi Desa</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">{formattedDate}</p>
+              </div>
+            </div>
+            <ShareButtons judul={artikel.judul} />
           </div>
         </header>
 
-        {/* Hero image (thumbnail) */}
+        {/* Hero Image */}
         {artikel.fotoUrl && (
-          <div className="mb-12 w-full h-[300px] md:h-[500px] rounded-[2rem] overflow-hidden shadow-md border border-outline-variant/20">
-            <img src={artikel.fotoUrl} alt={artikel.judul} className="w-full h-full object-cover" />
-          </div>
+          <figure className="mb-12 relative group">
+            <div className="w-full rounded-[2rem] overflow-hidden shadow-lg border border-outline-variant/10 bg-white">
+              <img 
+                src={artikel.fotoUrl} 
+                alt={artikel.judul} 
+                className="w-full h-auto max-h-[500px] object-cover transition-transform duration-700 group-hover:scale-105" 
+              />
+            </div>
+          </figure>
         )}
 
-        {/* Article Content */}
-        <article className="bg-surface-container-lowest p-8 md:p-12 lg:p-16 rounded-[2rem] shadow-sm border border-outline-variant/20 relative overflow-hidden">
-          {/* Abstract corner decoration */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-bl-full pointer-events-none" />
-          
-          <div className="relative z-10 prose prose-lg prose-headings:font-serif prose-headings:text-on-surface prose-p:text-on-surface-variant prose-p:leading-relaxed prose-a:text-secondary max-w-none">
+        {/* Article Body */}
+        <article className="mb-16">
+          <div className="prose prose-lg md:prose-xl prose-headings:font-serif prose-headings:font-bold prose-headings:text-primary prose-p:text-[#334155] prose-p:leading-[1.9] prose-a:text-secondary max-w-none">
             {hasBloks ? (
-              /* Render block-based content */
               artikel.bloks.map((blok, index) => {
                 if (blok.tipe === "teks") {
-                  // Split text into paragraphs
                   return blok.konten.split("\n").map((paragraph, pIndex) => {
                     if (!paragraph.trim()) return null;
-                    if (index === 0 && pIndex === 0) {
-                      return (
-                        <p key={`${blok.id}-${pIndex}`} className="text-lg md:text-xl text-on-surface leading-relaxed mb-6">
-                          {paragraph}
-                        </p>
-                      );
-                    }
+                    const isFirst = index === 0 && pIndex === 0;
+                    
                     return (
-                      <p key={`${blok.id}-${pIndex}`} className="mb-6">
+                      <p 
+                        key={`${blok.id}-${pIndex}`} 
+                        className={isFirst 
+                          ? "mb-8 text-lg md:text-[20px] leading-[1.8] text-[#1e293b] font-medium first-letter:text-6xl first-letter:font-serif first-letter:font-bold first-letter:text-primary first-letter:float-left first-letter:mr-3 first-letter:-mt-2 first-letter:leading-none" 
+                          : "mb-6 text-base md:text-[17px] text-[#334155] font-normal tracking-wide"}
+                      >
                         {paragraph}
                       </p>
                     );
@@ -138,15 +148,15 @@ export default async function DetailBeritaPage({ params }: { params: Promise<{ s
                 } else if (blok.tipe === "gambar") {
                   return (
                     <figure key={blok.id} className="my-10">
-                      <div className="w-full rounded-2xl overflow-hidden shadow-md border border-outline-variant/20">
+                      <div className="w-full rounded-2xl overflow-hidden shadow-md border border-outline-variant/10">
                         <img 
                           src={blok.konten} 
                           alt={blok.caption || artikel.judul} 
-                          className="w-full h-auto object-cover not-prose" 
+                          className="w-full h-auto object-cover not-prose hover:scale-105 transition-transform duration-500" 
                         />
                       </div>
                       {blok.caption && (
-                        <figcaption className="mt-3 text-center text-sm italic text-on-surface-variant/70 not-prose">
+                        <figcaption className="mt-3 text-center text-sm italic text-on-surface-variant/70 not-prose font-serif">
                           {blok.caption}
                         </figcaption>
                       )}
@@ -156,18 +166,16 @@ export default async function DetailBeritaPage({ params }: { params: Promise<{ s
                 return null;
               })
             ) : (
-              /* Fallback: render legacy single-content format */
               artikel.konten.split("\n").map((paragraph, index) => {
                 if (!paragraph.trim()) return null;
-                if (index === 0) {
-                  return (
-                    <p key={index} className="text-lg md:text-xl text-on-surface leading-relaxed mb-6">
-                      {paragraph}
-                    </p>
-                  );
-                }
+                const isFirst = index === 0;
                 return (
-                  <p key={index} className="mb-6">
+                  <p 
+                    key={index} 
+                    className={isFirst 
+                      ? "mb-8 text-lg md:text-[20px] leading-[1.8] text-[#1e293b] font-medium first-letter:text-6xl first-letter:font-serif first-letter:font-bold first-letter:text-primary first-letter:float-left first-letter:mr-3 first-letter:-mt-2 first-letter:leading-none" 
+                      : "mb-6 text-base md:text-[17px] text-[#334155] font-normal tracking-wide"}
+                  >
                     {paragraph}
                   </p>
                 );
@@ -176,48 +184,59 @@ export default async function DetailBeritaPage({ params }: { params: Promise<{ s
           </div>
         </article>
 
-        {/* Social Share / Interaction */}
-        <div className="flex items-center gap-4 mt-10 justify-center">
-          <span className="text-sm font-medium text-on-surface-variant">Bagikan artikel:</span>
-          <button className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center hover:bg-primary-container hover:text-on-primary-container transition-colors text-on-surface">
-            <Icon name="share" className="text-lg" />
-          </button>
-          <button className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center hover:bg-secondary-container hover:text-on-secondary-container transition-colors text-on-surface">
-            <Icon name="link" className="text-lg" />
-          </button>
+        {/* Tags / Footer CTA */}
+        <div className="flex items-center justify-between py-6 border-y border-outline-variant/15 mb-16">
+          <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+            <Icon name="verified" className="text-primary text-lg" />
+            <span className="font-medium">Diterbitkan oleh Pemerintah Desa Kedungdowo</span>
+          </div>
+          <Link 
+            href="/berita"
+            className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:text-surface-tint transition-colors"
+          >
+            <Icon name="arrow_back" className="text-base" /> Semua Berita
+          </Link>
         </div>
 
-        {/* Recommendations Section */}
+        {/* Recommendations */}
         {rekomendasiList.length > 0 && (
-          <section className="mt-24">
-            <div className="flex items-center gap-4 mb-8">
-              <h3 className="font-serif text-3xl font-bold text-on-surface">Berita Lainnya</h3>
-              <div className="h-px bg-outline-variant/30 flex-grow" />
+          <section>
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <span className="text-secondary font-semibold text-sm uppercase tracking-wider block mb-2">
+                  Baca Juga
+                </span>
+                <h3 className="font-serif text-2xl font-bold text-on-surface">
+                  Berita Lainnya
+                </h3>
+              </div>
+              <Link href="/berita" className="text-sm font-bold text-primary hover:underline">
+                Lihat Semua
+              </Link>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {rekomendasiList.map((rec) => (
-                <Link href={getBeritaUrl(rec.judul, rec.id)} key={rec.id} className="group bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant shadow-sm hover:shadow-[0_4px_16px_rgba(121,85,72,0.05)] transition-all duration-300 flex flex-col h-full">
-                  <div className="p-6 flex flex-col flex-grow">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className={`${getChipColor(rec.kategori)} text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded shadow-sm`}>
-                        {rec.kategori}
-                      </span>
-                      <time className="text-xs font-medium text-on-surface-variant">
-                        {new Date(rec.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
-                      </time>
+                <Link 
+                  href={getBeritaUrl(rec.judul, rec.id)} 
+                  key={rec.id} 
+                  className="group bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/20 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
+                >
+                  {rec.fotoUrl && (
+                    <div className="h-36 w-full overflow-hidden shrink-0 bg-surface-container">
+                      <img src={rec.fotoUrl} alt={rec.judul} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     </div>
-                    {rec.fotoUrl && (
-                      <div className="h-32 w-full mb-3 rounded-lg overflow-hidden shrink-0">
-                        <img src={rec.fotoUrl} alt={rec.judul} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      </div>
-                    )}
-                    <h4 className="text-base font-serif font-bold text-on-surface mb-2 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                  )}
+                  <div className="p-4 flex flex-col flex-grow">
+                    <time className="text-[11px] font-medium text-on-surface-variant/60 block mb-1.5">
+                      {new Date(rec.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                    </time>
+                    <h4 className="text-sm font-serif font-bold text-on-surface mb-2 group-hover:text-primary transition-colors line-clamp-2 leading-snug flex-grow">
                       {rec.judul}
                     </h4>
-                    <p className="text-sm text-on-surface-variant line-clamp-2 flex-grow leading-relaxed">
-                      {rec.konten}
-                    </p>
+                    <span className="text-xs font-bold text-primary flex items-center gap-1 mt-auto">
+                      Baca <Icon name="east" className="text-xs group-hover:translate-x-1 transition-transform" />
+                    </span>
                   </div>
                 </Link>
               ))}

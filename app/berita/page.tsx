@@ -5,17 +5,18 @@ import { getBeritaUrl } from "@/lib/slug";
 import AnimateIn from "../components/AnimateIn";
 import PengumumanWidgetClient from "../components/PengumumanWidgetClient";
 
-export const metadata = { title: "Berita & Informasi Desa - Desa Kedungdowo" };
+export const metadata = { 
+  title: "Berita & Informasi Desa - Desa Kedungdowo",
+  description: "Portal berita resmi, laporan kegiatan masyarakat, dan kabar terbaru Desa Kedungdowo, Kecamatan Andong, Kabupaten Boyolali."
+};
 
-export const revalidate = 0; // Disable static rendering for dynamic updates
+export const revalidate = 0;
 
 const getChipColor = (kategori: string) => {
   const kat = kategori.toLowerCase();
-  if (kat.includes("pembangunan") || kat.includes("infrastruktur")) return "bg-surface-container text-on-surface";
-  if (kat.includes("ekonomi") || kat.includes("umkm")) return "bg-secondary-container text-on-secondary-container";
-  if (kat.includes("pertanian") || kat.includes("peternakan")) return "bg-[#e9f2ff] text-[#004a75]";
-  if (kat.includes("kesehatan")) return "bg-[#ffdad6] text-[#93000a]";
-  if (kat.includes("pendidikan")) return "bg-tertiary-container text-on-tertiary-container";
+  if (kat.includes("kegiatan")) return "bg-primary text-on-primary";
+  if (kat.includes("berita")) return "bg-secondary text-on-secondary";
+  if (kat.includes("pembangunan") || kat.includes("infrastruktur")) return "bg-tertiary text-on-tertiary";
   return "bg-primary text-on-primary";
 };
 
@@ -28,25 +29,18 @@ export default async function BeritaPage({ searchParams }: PageProps) {
   const page = Number(resolvedParams.page) || 1;
   const itemsPerPage = 6;
   const skip = (page - 1) * itemsPerPage;
-  // 1. Cari berita yang ditandai sebagai sorotan utama
+
   let featured = await prisma.artikel.findFirst({
-    where: {
-      isSorotan: true,
-      kategori: { not: "Pengumuman" }
-    }
+    where: { isSorotan: true, kategori: { not: "Pengumuman" } }
   });
 
-  // 2. Jika tidak ada yang ditandai, gunakan berita terbaru sebagai fallback
   if (!featured) {
     featured = await prisma.artikel.findFirst({
-      where: {
-        kategori: { not: "Pengumuman" }
-      },
+      where: { kategori: { not: "Pengumuman" } },
       orderBy: { createdAt: "desc" }
     });
   }
 
-  // 3. Ambil sisa berita lainnya dengan mengecualikan berita sorotan utama (dengan paginasi)
   const totalOthersCount = await prisma.artikel.count({
     where: {
       kategori: { not: "Pengumuman" },
@@ -62,224 +56,210 @@ export default async function BeritaPage({ searchParams }: PageProps) {
       id: featured ? { not: featured.id } : undefined
     },
     orderBy: { createdAt: "desc" },
-    skip: skip,
+    skip,
     take: itemsPerPage
   });
 
   const pengumumanList = await prisma.artikel.findMany({
-    where: {
-      kategori: "Pengumuman"
-    },
+    where: { kategori: "Pengumuman" },
     orderBy: { createdAt: "desc" },
     take: 3
   });
 
-  const umkmCount = await prisma.produkUMKM.count();
-
   return (
-    <div className="relative min-h-screen bg-surface">
-      {/* Ambient Background Pattern */}
-      <div className="absolute inset-0 z-0 bg-[radial-gradient(#707a6c_1px,transparent_1px),radial-gradient(#707a6c_1px,transparent_1px)] bg-[size:40px_40px] bg-[position:0_0,20px_20px] opacity-[0.03] pointer-events-none" />
-      
-      <main className="relative z-10 flex-grow w-full max-w-[1200px] mx-auto px-6 pt-8 pb-20 md:pb-32">
-        {/* Page Header */}
-        <div className="mb-12 mt-12 md:mt-20">
+    <div className="relative min-h-screen bg-background">
+      <main className="relative z-10 w-full max-w-[1200px] mx-auto px-6 pb-20 md:pb-32">
+        
+        {/* ===== PAGE HEADER ===== */}
+        <div className="pt-20 md:pt-28 mb-12 text-center max-w-2xl mx-auto px-6">
           <AnimateIn delay={0.1} direction="up">
-            <h1 className="font-serif text-4xl md:text-5xl font-bold text-on-surface mb-4 tracking-tight">
-              Berita &amp; Informasi <span className="italic font-light text-primary">Desa</span>
+            <h1 className="font-serif text-3xl md:text-5xl font-bold text-on-surface mb-2 md:mb-4 leading-tight">
+              Berita <span className="italic font-light text-primary">& Kegiatan</span>
             </h1>
-          </AnimateIn>
-          <AnimateIn delay={0.2} direction="up">
-            <p className="text-lg text-on-surface-variant max-w-2xl leading-relaxed">
+            <p className="text-sm md:text-base text-on-surface-variant leading-relaxed">
               Pusat informasi resmi mengenai kegiatan, pembangunan, dan pengumuman terkini di lingkungan Desa Kedungdowo.
             </p>
           </AnimateIn>
         </div>
 
-        {/* Row 1: Featured Story & Pengumuman Penting (Flexible height on desktop, max-height matching Featured) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-12">
+        {/* ===== FEATURED + PENGUMUMAN ===== */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-16">
           
-          {/* Left Column: Featured Story (8 cols) */}
-          <div className="lg:col-span-8 flex flex-col">
+          {/* Featured Story */}
+          <div className="lg:col-span-8">
             {featured && (
-              <section className="h-full flex flex-col">
-                <AnimateIn delay={0.3} direction="up" className="h-full flex flex-col">
-                  <div className="group bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant shadow-sm hover:shadow-[0_8px_24px_rgba(121,85,72,0.08)] transition-all duration-300 flex flex-col h-full">
-                    <div className="relative h-64 md:h-96 w-full overflow-hidden bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center shrink-0">
+              <AnimateIn delay={0.2} direction="up" className="h-full">
+                <Link href={getBeritaUrl(featured.judul, featured.id)} className="group block h-full">
+                  <div className="relative rounded-2xl overflow-hidden h-full min-h-[420px] shadow-lg">
+                    {/* Background Image */}
+                    <div className="absolute inset-0">
                       {featured.fotoUrl ? (
-                        <img src={featured.fotoUrl} alt={featured.judul} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <img 
+                          src={featured.fotoUrl} 
+                          alt={featured.judul} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
+                        />
                       ) : (
-                        <Icon name="newspaper" filled className="text-9xl text-primary/20 group-hover:scale-105 transition-transform duration-500" />
+                        <div className="w-full h-full bg-gradient-to-br from-primary to-secondary" />
                       )}
-                      <div className="absolute top-4 left-4">
-                        <span className="bg-primary text-on-primary text-sm font-semibold px-3 py-1 rounded-full shadow-sm">Sorotan Utama</span>
-                      </div>
+                      {/* Dark gradient overlay for text readability */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                     </div>
-                    <div className="p-6 md:p-8 border-t-4 border-primary flex flex-col flex-grow justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 text-on-surface-variant text-xs font-medium mb-3">
-                          <Icon name="calendar_today" className="text-base" />
-                          <span>{new Date(featured.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</span>
-                          <span className="mx-2">•</span>
-                          <Icon name="person" className="text-base" />
-                          <span>Admin Desa</span>
-                        </div>
-                        <h2 className="font-serif text-3xl font-bold text-on-surface mb-4 group-hover:text-primary transition-colors leading-tight line-clamp-2">
-                          {featured.judul}
-                        </h2>
-                        <p className="text-base text-on-surface-variant mb-6 line-clamp-3 leading-relaxed">
-                          {featured.konten}
-                        </p>
+
+                    {/* Content overlaid on image */}
+                    <div className="relative z-10 flex flex-col justify-end h-full p-6 md:p-10">
+                      <div className="flex items-center gap-3 mb-4">
+                        <span className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full ${getChipColor(featured.kategori)}`}>
+                          {featured.kategori}
+                        </span>
+                        <span className="text-white/70 text-xs font-medium flex items-center gap-1">
+                          <Icon name="schedule" className="text-xs" />
+                          {new Date(featured.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                        </span>
                       </div>
-                      <Link href={getBeritaUrl(featured.judul, featured.id)} className="inline-flex items-center gap-2 text-primary text-sm font-semibold hover:text-primary-container transition-colors mt-auto">
-                        Baca Selengkapnya <Icon name="arrow_forward" className="text-lg" />
-                      </Link>
+                      <h2 className="font-serif text-2xl md:text-4xl font-bold text-white leading-snug mb-3 group-hover:text-[#a3f69c] transition-colors line-clamp-3">
+                        {featured.judul}
+                      </h2>
+                      <p className="text-white/80 text-sm md:text-base line-clamp-2 leading-relaxed max-w-2xl mb-4">
+                        {featured.konten}
+                      </p>
+                      <span className="inline-flex items-center gap-2 text-[#a3f69c] text-sm font-bold group-hover:gap-3 transition-all">
+                        Baca Selengkapnya <Icon name="arrow_forward" className="text-base" />
+                      </span>
                     </div>
                   </div>
-                </AnimateIn>
-              </section>
+                </Link>
+              </AnimateIn>
             )}
           </div>
 
-          {/* Right Column: Pengumuman Penting (4 cols) */}
-          <aside className="lg:col-span-4 flex flex-col">
-            <AnimateIn delay={0.2} direction="left" className="w-full flex flex-col">
-              <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-6 relative overflow-hidden flex flex-col max-h-[660px]">
-                <div className="flex items-center gap-2 mb-6 shrink-0">
-                  <Icon name="campaign" filled className="text-secondary text-2xl" />
-                  <h3 className="font-serif text-2xl font-semibold text-on-surface">Pengumuman Penting</h3>
+          {/* Pengumuman Sidebar */}
+          <aside className="lg:col-span-4">
+            <AnimateIn delay={0.3} direction="left" className="w-full">
+              <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/20 shadow-sm p-6 flex flex-col max-h-[500px] lg:max-h-[520px]">
+                <div className="flex items-center gap-2 mb-5 pb-4 border-b border-outline-variant/15 shrink-0">
+                  <Icon name="campaign" filled className="text-secondary text-xl" />
+                  <h3 className="font-serif text-lg font-bold text-on-surface">Pengumuman</h3>
                 </div>
-                
-                {/* Interactive client announcements list and modal */}
                 <PengumumanWidgetClient pengumumanList={pengumumanList} />
               </div>
             </AnimateIn>
           </aside>
         </div>
 
-        {/* Section Divider (Batik Motif) */}
-        {featured && others.length > 0 && (
-          <div className="w-full flex items-center justify-center opacity-20 my-8">
-            <div className="h-px bg-outline w-1/3"></div>
-            <Icon name="eco" className="mx-4 text-outline" />
-            <div className="h-px bg-outline w-1/3"></div>
-          </div>
-        )}
-
-        {/* Row 2: News Feed Grid (Full width, showing 3 columns across) */}
-        <div className="w-full">
-          <section>
-            <AnimateIn delay={0.1} direction="up">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-serif text-2xl font-semibold text-on-surface">Berita Terkini</h3>
+        {/* ===== BERITA TERKINI GRID ===== */}
+        <div className="mb-12">
+          <AnimateIn delay={0.1} direction="up">
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <span className="text-secondary font-semibold text-sm uppercase tracking-wider block mb-2">
+                  Berita Lainnya
+                </span>
+                <h2 className="font-serif text-3xl font-bold text-on-surface">
+                  Kabar Terkini
+                </h2>
               </div>
-            </AnimateIn>
-            
-            {others.length === 0 && !featured ? (
-              <AnimateIn delay={0.2} direction="up">
-                <div className="text-center py-16 bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm">
-                  <Icon name="article" className="text-5xl text-outline-variant mb-4" />
-                  <p className="text-on-surface-variant font-medium">Belum ada berita yang dipublikasikan.</p>
-                </div>
-              </AnimateIn>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                {others.map((berita, idx) => (
-                  <AnimateIn key={berita.id} delay={0.1 * (idx % 3)} direction="up" className="h-full">
-                    <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant shadow-sm hover:shadow-[0_4px_16px_rgba(121,85,72,0.05)] transition-all duration-300 flex flex-col h-full group">
-                      <div className="h-48 w-full overflow-hidden relative bg-gradient-to-br from-surface-container to-surface-variant flex items-center justify-center">
+            </div>
+          </AnimateIn>
+
+          {others.length === 0 && !featured ? (
+            <div className="text-center py-16 bg-surface-container-lowest rounded-2xl border border-outline-variant/20">
+              <Icon name="article" className="text-5xl text-on-surface-variant/30 mb-4" />
+              <h3 className="font-serif text-lg font-bold text-on-background">Belum Ada Berita</h3>
+              <p className="text-on-surface-variant text-sm mt-1">Nantikan informasi terbaru dari Desa Kedungdowo.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
+              {others.map((berita, idx) => (
+                <AnimateIn key={berita.id} delay={0.1 + 0.08 * (idx % 3)} direction="up" className="h-full">
+                  <Link href={getBeritaUrl(berita.judul, berita.id)} className="group block h-full">
+                    <article className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/20 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col h-full">
+                      
+                      {/* Image */}
+                      <div className="h-52 w-full overflow-hidden relative bg-surface-container shrink-0">
                         {berita.fotoUrl ? (
-                          <img src={berita.fotoUrl} alt={berita.judul} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          <img 
+                            src={berita.fotoUrl} 
+                            alt={berita.judul} 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                          />
                         ) : (
-                          <Icon name="image" className="text-5xl text-outline/30 group-hover:scale-110 transition-transform duration-500" />
+                          <div className="w-full h-full bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
+                            <Icon name="article" className="text-5xl text-primary/20" />
+                          </div>
                         )}
                         <div className="absolute top-3 left-3">
-                          <span className={`${getChipColor(berita.kategori)} text-xs font-medium px-2 py-1 rounded shadow-sm`}>
+                          <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${getChipColor(berita.kategori)}`}>
                             {berita.kategori}
                           </span>
                         </div>
                       </div>
+
+                      {/* Text Content */}
                       <div className="p-5 flex flex-col flex-grow">
-                        <div className="text-xs font-medium text-on-surface-variant mb-2">
+                        <time className="text-[11px] font-medium text-on-surface-variant/70 mb-2 block">
                           {new Date(berita.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
-                        </div>
-                        <Link href={getBeritaUrl(berita.judul, berita.id)} className="text-sm font-semibold text-on-surface mb-2 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                        </time>
+                        <h3 className="font-serif text-base font-bold text-on-surface mb-2 group-hover:text-primary transition-colors line-clamp-2 leading-snug flex-grow">
                           {berita.judul}
-                        </Link>
-                        <p className="text-sm text-on-surface-variant mb-4 line-clamp-2 flex-grow leading-relaxed">
+                        </h3>
+                        <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed mb-4">
                           {berita.konten}
                         </p>
+                        <span className="inline-flex items-center gap-1 text-primary text-xs font-bold mt-auto">
+                          Baca Selengkapnya 
+                          <Icon name="east" className="text-sm group-hover:translate-x-1 transition-transform" />
+                        </span>
                       </div>
-                    </div>
-                  </AnimateIn>
-                ))}
-              </div>
-            )}
-            
-            {totalPages > 1 && (
-              <div className="mt-12 flex flex-wrap justify-center items-center gap-2 border-t border-outline-variant/30 pt-6">
-                {/* Tombol Sebelumnya */}
-                {page > 1 ? (
-                  <Link
-                    href={`/berita?page=${page - 1}`}
-                    scroll={false}
-                    className="inline-flex items-center justify-center gap-1 min-w-[40px] h-10 px-3 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container hover:text-primary transition-all text-sm font-semibold"
-                  >
-                    <Icon name="chevron_left" className="text-lg" />
-                    Sebelumnya
+                    </article>
                   </Link>
-                ) : (
-                  <button
-                    disabled
-                    className="inline-flex items-center justify-center gap-1 min-w-[40px] h-10 px-3 rounded-lg border border-outline-variant/30 text-on-surface-variant/30 cursor-not-allowed text-sm font-semibold"
-                  >
-                    <Icon name="chevron_left" className="text-lg" />
-                    Sebelumnya
-                  </button>
-                )}
+                </AnimateIn>
+              ))}
+            </div>
+          )}
 
-                {/* Angka Halaman */}
-                {Array.from({ length: totalPages }).map((_, i) => {
-                  const pageNum = i + 1;
-                  const isCurrent = pageNum === page;
-                  return (
-                    <Link
-                      key={pageNum}
-                      href={`/berita?page=${pageNum}`}
-                      scroll={false}
-                      className={`inline-flex items-center justify-center w-10 h-10 rounded-lg text-sm font-semibold transition-all ${
-                        isCurrent
-                          ? "bg-primary text-on-primary shadow-sm font-bold"
-                          : "border border-outline-variant text-on-surface-variant hover:bg-surface-container hover:text-primary"
-                      }`}
-                    >
-                      {pageNum}
-                    </Link>
-                  );
-                })}
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-12 flex flex-wrap justify-center items-center gap-2 pt-8 border-t border-outline-variant/15">
+              {page > 1 ? (
+                <Link href={`/berita?page=${page - 1}`} scroll={false} className="inline-flex items-center gap-1 px-4 h-10 rounded-xl border border-outline-variant/40 text-on-surface-variant hover:bg-surface-container hover:text-primary transition-all text-sm font-semibold">
+                  <Icon name="chevron_left" className="text-lg" /> Sebelumnya
+                </Link>
+              ) : (
+                <button disabled className="inline-flex items-center gap-1 px-4 h-10 rounded-xl border border-outline-variant/20 text-on-surface-variant/30 cursor-not-allowed text-sm font-semibold">
+                  <Icon name="chevron_left" className="text-lg" /> Sebelumnya
+                </button>
+              )}
 
-                {/* Tombol Selanjutnya */}
-                {page < totalPages ? (
+              {Array.from({ length: totalPages }).map((_, i) => {
+                const pageNum = i + 1;
+                return (
                   <Link
-                    href={`/berita?page=${page + 1}`}
+                    key={pageNum}
+                    href={`/berita?page=${pageNum}`}
                     scroll={false}
-                    className="inline-flex items-center justify-center gap-1 min-w-[40px] h-10 px-3 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container hover:text-primary transition-all text-sm font-semibold"
+                    className={`inline-flex items-center justify-center w-10 h-10 rounded-xl text-sm font-bold transition-all ${
+                      pageNum === page
+                        ? "bg-primary text-on-primary shadow-sm"
+                        : "border border-outline-variant/40 text-on-surface-variant hover:bg-surface-container hover:text-primary"
+                    }`}
                   >
-                    Selanjutnya
-                    <Icon name="chevron_right" className="text-lg" />
+                    {pageNum}
                   </Link>
-                ) : (
-                  <button
-                    disabled
-                    className="inline-flex items-center justify-center gap-1 min-w-[40px] h-10 px-3 rounded-lg border border-outline-variant/30 text-on-surface-variant/30 cursor-not-allowed text-sm font-semibold"
-                  >
-                    Selanjutnya
-                    <Icon name="chevron_right" className="text-lg" />
-                  </button>
-                )}
-              </div>
-            )}
-          </section>
+                );
+              })}
+
+              {page < totalPages ? (
+                <Link href={`/berita?page=${page + 1}`} scroll={false} className="inline-flex items-center gap-1 px-4 h-10 rounded-xl border border-outline-variant/40 text-on-surface-variant hover:bg-surface-container hover:text-primary transition-all text-sm font-semibold">
+                  Selanjutnya <Icon name="chevron_right" className="text-lg" />
+                </Link>
+              ) : (
+                <button disabled className="inline-flex items-center gap-1 px-4 h-10 rounded-xl border border-outline-variant/20 text-on-surface-variant/30 cursor-not-allowed text-sm font-semibold">
+                  Selanjutnya <Icon name="chevron_right" className="text-lg" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </main>
     </div>
