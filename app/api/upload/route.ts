@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,29 +10,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
     // Create unique filename
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const filename = `${uniqueSuffix}-${file.name.replace(/\s+/g, "-")}`;
+    const filePath = `images/${filename}`;
 
-    // Upload directory
-    const uploadDir = join(process.cwd(), "public/uploads");
-    
-    // Ensure directory exists
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from("arsip-dokumen")
+      .upload(filePath, file, { cacheControl: "3600", upsert: false });
+
+    if (error) {
+      console.error("Error uploading to Supabase:", error);
+      return NextResponse.json({ error: "Failed to upload file to Supabase" }, { status: 500 });
     }
 
-    const filepath = join(uploadDir, filename);
-    await writeFile(filepath, buffer);
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage
+      .from("arsip-dokumen")
+      .getPublicUrl(filePath);
 
-    // Return the public URL
-    const fileUrl = `/uploads/${filename}`;
-    return NextResponse.json({ url: fileUrl });
+    return NextResponse.json({ url: publicUrlData.publicUrl });
   } catch (error) {
     console.error("Upload error:", error);
-    return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to process upload" }, { status: 500 });
   }
 }
