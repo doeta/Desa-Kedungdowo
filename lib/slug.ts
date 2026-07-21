@@ -6,8 +6,8 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, ""); // Bersihkan strip di awal dan akhir teks
 }
 
-export function getBeritaUrl(judul: string, id: number): string {
-  return `/berita/${slugify(judul)}-${id}`;
+export function getBeritaUrl(judul: string, id?: number): string {
+  return `/berita/${slugify(judul)}`;
 }
 
 export function extractIdFromSlug(slug: string): number | null {

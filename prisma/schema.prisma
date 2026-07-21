@@ -6,11 +6,12 @@ datasource db {
   provider  = "postgresql"
 }
 
-// Untuk Profil Perangkat Desa
+// Untuk Profil Perangkat Desa dan BPD
 model PerangkatDesa {
   id        Int      @id @default(autoincrement())
   nama      String
   jabatan   String
+  tipe      String   @default("Perangkat Desa") // "Perangkat Desa" atau "BPD"
   fotoUrl   String?  // URL gambar di-upload misal ke Vercel Blob/Cloudinary
 }
 
@@ -63,4 +64,76 @@ model StatistikPenduduk {
   jumlah   Int    @default(0)
 
   @@unique([kategori, label])
+}
+
+// Untuk Pusat Layanan & Informasi Publik Desa
+model LayananPublik {
+  id           String   @id @default(uuid())
+  kategori     String   // "Pengaduan / Informasi Publik" atau "Permohonan Surat"
+  namaPemohon  String
+  kontak       String   // Nomor WhatsApp
+  perihal      String   @db.Text
+  tanggapan    String?  @db.Text // Jawaban dari admin desa
+  status       String   @default("Belum Direspon")
+  createdAt    DateTime @default(now())
+}
+
+// Untuk Arsip Digital Desa
+model ArsipDigital {
+  id           Int      @id @default(autoincrement())
+  nomor        String
+  tahun        Int
+  perihal      String
+  isiDokumen   String   @db.Text
+  kategori     String   @default("Lainnya")
+  lokasiSimpan String   @db.Text
+  jumlah       Int
+  filePdfUrl   String?
+  createdAt    DateTime @default(now())
+}
+
+// Tabel dummy untuk keep-alive ping (mencegah Supabase free tier pause)
+model KeepAlive {
+  id       Int      @id @default(1)
+  pingedAt DateTime @default(now()) @map("pinged_at")
+
+  @@map("keep_alive")
+}
+
+// Untuk Akun Admin & Superadmin
+model AdminUser {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  salt         String
+  role         String   @default("admin") // "admin" atau "superadmin"
+  namaLengkap  String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admin_users")
+}
+
+// Untuk Pengetahuan AI Chatbot
+model ChatbotKnowledge {
+  id        Int      @id @default(autoincrement())
+  judul     String
+  isi       String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Untuk Peraturan Desa (JDIH)
+model PeraturanDesa {
+  id           String   @id @default(cuid())
+  judul        String
+  nomor        String
+  tahun        String
+  kategori     String   // "Peraturan Desa", "Keputusan Kepala Desa", "Peraturan Kepala Desa"
+  isiDokumen   String   @db.Text
+  filePdfUrl   String?
+  lokasiSimpan String
+  jumlah       Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
