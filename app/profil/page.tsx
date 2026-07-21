@@ -39,6 +39,10 @@ export default async function ProfilPage() {
   const angkatanKerja = ketenagakerjaanStats.find(i => i.label.includes("Angkatan"))?.jumlah || 0;
   const pengangguran = ketenagakerjaanStats.find(i => i.label.includes("Belum Bekerja") || i.label.includes("Pengangguran"))?.jumlah || 0;
 
+  const pendidikanFasilitas = groupedStats["Fasilitas Pendidikan"] || [];
+  const kesehatanFasilitas = groupedStats["Fasilitas Kesehatan"] || [];
+  const publikFasilitas = groupedStats["Fasilitas Publik"] || [];
+
   return (
     <main className="w-full">
       {/* 1. Hero Section */}
@@ -118,6 +122,7 @@ export default async function ProfilPage() {
                       <span className="font-serif text-2xl font-semibold text-on-surface">90 <span className="text-base text-on-surface-variant font-sans font-normal">km</span></span>
                     </div>
                   </div>
+
                 </div>
               </AnimateIn>
             </div>
@@ -129,15 +134,32 @@ export default async function ProfilPage() {
                   <div className="absolute top-0 right-0 w-64 h-64 bg-secondary-container/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
                   <div className="relative z-10">
                     <p className="text-xs font-medium text-secondary tracking-widest uppercase mb-4">Struktur Wilayah</p>
+                    
+                    <div className="flex gap-8 mb-8 pb-8 border-b border-outline/20">
+                      <div>
+                        <span className="block text-4xl font-serif font-bold text-on-surface mb-1">20</span>
+                        <span className="text-xs text-on-surface-variant font-medium uppercase tracking-wider">Rukun Tetangga (RT)</span>
+                      </div>
+                      <div className="w-px h-16 bg-outline/20"></div>
+                      <div>
+                        <span className="block text-4xl font-serif font-bold text-on-surface mb-1">4</span>
+                        <span className="text-xs text-on-surface-variant font-medium uppercase tracking-wider">Rukun Warga (RW)</span>
+                      </div>
+                    </div>
+
                     <h3 className="font-serif text-2xl font-semibold text-on-surface mb-8">Pembagian Dusun</h3>
                     <div className="space-y-6">
-                      {["Kedungori", "Kedung Lengkong", "Jatisari", "Kedungdowo"].map((dusun, idx) => (
-                        <div key={dusun} className={`group/item flex items-center justify-between ${idx !== 3 ? 'border-b border-outline/20 pb-4' : 'pb-2'} hover:border-secondary transition-colors cursor-default`}>
+                      {[
+                        "Kedungori, Banyurip",
+                        "Kedung Lengkong, Tempursari, Kadirno",
+                        "Jatisari",
+                        "Kedungdowo, Wonosari, Tangkil, Belik"
+                      ].map((dusun, idx) => (
+                        <div key={idx} className={`group/item flex items-center justify-between ${idx !== 3 ? 'border-b border-outline/20 pb-4' : 'pb-2'} hover:border-secondary transition-colors cursor-default`}>
                           <div className="flex items-center">
-                            <span className="font-serif text-xl font-semibold text-outline/30 mr-6 group-hover/item:text-secondary transition-colors italic">0{idx + 1}</span>
-                            <span className="text-lg font-medium text-on-surface">{dusun}</span>
+                            <span className="font-serif text-xl font-semibold text-outline/30 mr-6 group-hover/item:text-secondary transition-colors italic shrink-0">0{idx + 1}</span>
+                            <span className="text-base md:text-lg font-medium text-on-surface">{dusun}</span>
                           </div>
-                          <Icon name="arrow_forward" className="text-outline/50 opacity-0 group-hover/item:opacity-100 transition-opacity" />
                         </div>
                       ))}
                     </div>
@@ -145,6 +167,34 @@ export default async function ProfilPage() {
                 </div>
               </AnimateIn>
             </div>
+          </div>
+
+          {/* Full-width Map */}
+          <div className="mt-12 lg:mt-16">
+            <AnimateIn delay={0.3} direction="up">
+              <h3 className="font-serif text-2xl font-semibold text-on-surface mb-6 flex items-center justify-center gap-3">
+                <Icon name="map" className="text-primary text-3xl" />
+                Peta Lokasi Balai Desa
+              </h3>
+              <div className="w-full h-[350px] md:h-[450px] rounded-3xl overflow-hidden border border-outline/20 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] relative group">
+                <div className="absolute inset-0 bg-surface-container flex items-center justify-center -z-10">
+                  <span className="flex flex-col items-center text-outline gap-2">
+                    <Icon name="satellite_alt" className="text-3xl animate-pulse" />
+                    <span className="text-xs font-medium uppercase tracking-wider">Memuat Peta...</span>
+                  </span>
+                </div>
+                <iframe 
+                  src="https://maps.google.com/maps?q=Balai+Desa+Kedungdowo,+Andong,+Boyolali&t=&z=17&ie=UTF8&iwloc=&output=embed" 
+                  width="100%" 
+                  height="100%" 
+                  style={{ border: 0 }} 
+                  allowFullScreen 
+                  loading="lazy" 
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="relative z-10 opacity-90 group-hover:opacity-100 transition-opacity duration-500"
+                ></iframe>
+              </div>
+            </AnimateIn>
           </div>
         </div>
       </section>
@@ -237,7 +287,7 @@ export default async function ProfilPage() {
                     Putra beliau, <strong>Kyai Rusdi</strong>, melanjutkan syiar Islam ke wilayah utara dan menikah dengan <strong className="text-on-surface">Nyai Sahdilah</strong>, putri sesepuh Jatisari, Kyai Singgo Manggolo. Dari sinilah berkembang syiar Islam di Dukuh Jatisari dan sekitarnya.
                   </p>
                   <p className="leading-relaxed">
-                    Warga dari beberapa dukuh — Kedungdowo, Kedungori, Tempursari, Kadirno, Kedunglengkong, Banyurip, Tangkil, Belik, Wonosari — bermusyawarah membentuk sentral pemerintahan dan menunjuk <strong className="text-on-surface">Reso Wijoyo</strong> sebagai Lurah pertama pada tahun <strong className="text-on-surface">1932</strong>.
+                    Warga dari beberapa dukuh — Kedungdowo, Kedungori Banyurip, Tempursari, Kadirno, Kedunglengkong, Banyurip, Tangkil, Belik, Wonosari — bermusyawarah membentuk sentral pemerintahan dan menunjuk <strong className="text-on-surface">Reso Wijoyo</strong> sebagai Lurah pertama pada tahun <strong className="text-on-surface">1932</strong>.
                   </p>
                   <p className="leading-relaxed">
                     Nama <span className="italic text-on-surface">&quot;Kedungdowo&quot;</span> berasal dari faktor geografis — desa ini dikelilingi oleh sungai (<em>kedung</em> yang <em>dowo</em> / panjang), memberikan identitas agraris yang kuat berkat ketersediaan air yang melimpah.
@@ -275,6 +325,8 @@ export default async function ProfilPage() {
           </div>
         </div>
       </section>
+
+
 
       {/* 5. Demografi (Dinamis dari Database) */}
       <section className="py-16 md:py-32 bg-surface-container-low relative">
@@ -494,7 +546,7 @@ export default async function ProfilPage() {
                       <p className="text-sm text-on-surface-variant max-w-md">Motor penggerak kegiatan sosial dan pemberdayaan masyarakat desa.</p>
                     </div>
                     <div className="flex flex-wrap gap-3 md:justify-end">
-                      {["Karang Taruna", "PKK", "LPMD", "BPD", "Kelompok Tani", "Remaja Masjid", "Posyandu"].map(item => (
+                      {["Karang Taruna", "PKK", "LPMD", "Kelompok Tani", "Remaja Masjid", "Posyandu"].map(item => (
                         <span key={item} className="px-4 py-2 bg-surface rounded-xl text-xs font-semibold text-on-surface shadow-sm border border-outline/30 hover:border-secondary transition-colors cursor-default">
                           {item}
                         </span>
@@ -541,18 +593,12 @@ export default async function ProfilPage() {
                     </div>
                     <h3 className="font-serif text-xl font-semibold text-on-surface mb-6 border-b border-outline/20 pb-4">Pendidikan</h3>
                     <ul className="space-y-4 text-base">
-                      <li className="flex justify-between items-center group">
-                        <span className="text-on-surface-variant group-hover:text-on-surface transition-colors">PAUD / TK</span>
-                        <span className="font-serif text-lg font-semibold text-on-surface">2</span>
-                      </li>
-                      <li className="flex justify-between items-center group">
-                        <span className="text-on-surface-variant group-hover:text-on-surface transition-colors">SD / MI</span>
-                        <span className="font-serif text-lg font-semibold text-on-surface">3</span>
-                      </li>
-                      <li className="flex justify-between items-center group">
-                        <span className="text-on-surface-variant group-hover:text-on-surface transition-colors">TPA / TPQ / Madin</span>
-                        <span className="font-serif text-lg font-semibold text-on-surface">3</span>
-                      </li>
+                      {pendidikanFasilitas.map(item => (
+                        <li key={item.id} className="flex justify-between items-center group">
+                          <span className="text-on-surface-variant group-hover:text-on-surface transition-colors">{item.label}</span>
+                          <span className="font-serif text-lg font-semibold text-on-surface">{item.jumlah}</span>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </AnimateIn>
@@ -565,22 +611,12 @@ export default async function ProfilPage() {
                     </div>
                     <h3 className="font-serif text-xl font-semibold text-on-surface mb-6 border-b border-outline/20 pb-4">Kesehatan</h3>
                     <ul className="space-y-4 text-base">
-                      <li className="flex justify-between items-center group">
-                        <span className="text-on-surface-variant group-hover:text-on-surface transition-colors">Posyandu Balita</span>
-                        <span className="font-serif text-lg font-semibold text-on-surface">4</span>
-                      </li>
-                      <li className="flex justify-between items-center group">
-                        <span className="text-on-surface-variant group-hover:text-on-surface transition-colors">Posyandu Lansia</span>
-                        <span className="font-serif text-lg font-semibold text-on-surface">4</span>
-                      </li>
-                      <li className="flex justify-between items-center group">
-                        <span className="text-on-surface-variant group-hover:text-on-surface transition-colors">Polindes</span>
-                        <span className="font-serif text-lg font-semibold text-on-surface">1</span>
-                      </li>
-                      <li className="flex justify-between items-center group">
-                        <span className="text-on-surface-variant group-hover:text-on-surface transition-colors">Bidan Desa</span>
-                        <span className="font-serif text-lg font-semibold text-on-surface">1</span>
-                      </li>
+                      {kesehatanFasilitas.map(item => (
+                        <li key={item.id} className="flex justify-between items-center group">
+                          <span className="text-on-surface-variant group-hover:text-on-surface transition-colors">{item.label}</span>
+                          <span className="font-serif text-lg font-semibold text-on-surface">{item.jumlah}</span>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </AnimateIn>
@@ -593,14 +629,12 @@ export default async function ProfilPage() {
                     </div>
                     <h3 className="font-serif text-xl font-semibold text-on-surface mb-6 border-b border-outline/20 pb-4">Fasilitas Publik</h3>
                     <ul className="space-y-4 text-base">
-                      <li className="flex justify-between items-center group">
-                        <span className="text-on-surface-variant group-hover:text-on-surface transition-colors">Tempat Ibadah</span>
-                        <span className="font-serif text-lg font-semibold text-on-surface">20</span>
-                      </li>
-                      <li className="flex justify-between items-center group">
-                        <span className="text-on-surface-variant group-hover:text-on-surface transition-colors">Lapangan Olahraga</span>
-                        <span className="font-serif text-lg font-semibold text-on-surface">4</span>
-                      </li>
+                      {publikFasilitas.map(item => (
+                        <li key={item.id} className="flex justify-between items-center group">
+                          <span className="text-on-surface-variant group-hover:text-on-surface transition-colors">{item.label}</span>
+                          <span className="font-serif text-lg font-semibold text-on-surface">{item.jumlah}</span>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </AnimateIn>
