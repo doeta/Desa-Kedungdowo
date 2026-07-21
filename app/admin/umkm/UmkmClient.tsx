@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Icon from "../../components/Icon";
+import ConfirmModal from "../components/ConfirmModal";
 import { createUmkm, updateUmkm, deleteUmkm } from "./actions";
 
 export default function UmkmClient({ initialData }: { initialData: any[] }) {
@@ -10,6 +11,7 @@ export default function UmkmClient({ initialData }: { initialData: any[] }) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, id: number | null}>({ isOpen: false, id: null });
 
   // Form State
   const [formData, setFormData] = useState({
@@ -92,10 +94,15 @@ export default function UmkmClient({ initialData }: { initialData: any[] }) {
     e.target.value = "";
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
-      await deleteUmkm(id);
-      setData(data.filter((item) => item.id !== id));
+  const confirmDelete = (id: number) => {
+    setConfirmModal({ isOpen: true, id });
+  };
+
+  const handleDelete = async () => {
+    if (confirmModal.id !== null) {
+      await deleteUmkm(confirmModal.id);
+      setData(data.filter((item) => item.id !== confirmModal.id));
+      setConfirmModal({ isOpen: false, id: null });
     }
   };
 
@@ -253,7 +260,7 @@ export default function UmkmClient({ initialData }: { initialData: any[] }) {
                       <button onClick={() => handleOpenEdit(item)} className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-md transition-colors">
                         <Icon name="edit" className="text-lg" />
                       </button>
-                      <button onClick={() => handleDelete(item.id)} className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-md transition-colors">
+                      <button onClick={() => confirmDelete(item.id)} className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-md transition-colors">
                         <Icon name="delete" className="text-lg" />
                       </button>
                     </div>
@@ -458,6 +465,14 @@ export default function UmkmClient({ initialData }: { initialData: any[] }) {
           </div>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        title="Hapus Data UMKM"
+        message="Apakah Anda yakin ingin menghapus data UMKM ini? Data yang sudah dihapus tidak dapat dikembalikan."
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmModal({ isOpen: false, id: null })}
+      />
     </>
   );
 }

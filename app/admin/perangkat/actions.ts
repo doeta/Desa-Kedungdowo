@@ -3,25 +3,27 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-export async function createPerangkat(data: { nama: string; jabatan: string; fotoUrl: string }) {
+export async function createPerangkat(data: { nama: string; jabatan: string; fotoUrl: string; tipe: string }) {
   await prisma.perangkatDesa.create({
     data: {
       nama: data.nama,
       jabatan: data.jabatan,
       fotoUrl: data.fotoUrl,
+      tipe: data.tipe,
     },
   });
   revalidatePath("/admin/perangkat");
   revalidatePath("/perangkat");
 }
 
-export async function updatePerangkat(id: number, data: { nama: string; jabatan: string; fotoUrl: string }) {
+export async function updatePerangkat(id: number, data: { nama: string; jabatan: string; fotoUrl: string; tipe: string }) {
   await prisma.perangkatDesa.update({
     where: { id },
     data: {
       nama: data.nama,
       jabatan: data.jabatan,
       fotoUrl: data.fotoUrl,
+      tipe: data.tipe,
     },
   });
   revalidatePath("/admin/perangkat");

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Icon from "../components/Icon";
 import { prisma } from "@/lib/prisma";
+import BpdBox from "./BpdBox";
 
 /* ───────────── OrgCard: foto di atas, jabatan & nama di bawah ───────────── */
 const OrgCard = ({
@@ -12,7 +13,7 @@ const OrgCard = ({
 }: {
   title: string;
   name?: string;
-  photoUrl?: string;
+  photoUrl?: string | null;
   colorScheme?: "red" | "blue" | "green" | "kades";
   size?: "large" | "normal";
 }) => {
@@ -61,8 +62,11 @@ export default async function PemerintahanPage() {
     orderBy: { id: "asc" },
   });
 
+  const bpdMembers = perangkatList.filter((p) => p.tipe === "BPD");
+  const perangkatDesaList = perangkatList.filter((p) => p.tipe !== "BPD");
+
   const find = (kw: string) =>
-    perangkatList.find((p) => p.jabatan.toLowerCase().includes(kw.toLowerCase()));
+    perangkatDesaList.find((p) => p.jabatan.toLowerCase().includes(kw.toLowerCase()));
 
   const kades = find("kepala desa");
   const sekdes = find("sekretaris");
@@ -146,7 +150,7 @@ export default async function PemerintahanPage() {
         </div>
 
         {/* ══════════════ Struktur Organisasi ══════════════ */}
-        <div className="w-full px-2 overflow-x-auto pb-8 scrollbar-hide">
+        <div className="w-full px-2 overflow-x-auto overflow-y-hidden pb-8 scrollbar-hide">
           <div className="chart-container transition-all duration-300">
             <div className="chart-scaler">
               <div className="relative" style={{ width: W, height: CHART_H }}>
@@ -274,9 +278,7 @@ export default async function PemerintahanPage() {
               {/* ─── Cards ─── */}
               {/* ROW 0 */}
               <div className="absolute" style={{ top: R0, left: BPD_X }}>
-                <div className="w-[180px] h-[306px] flex items-center justify-center rounded-lg border-2 border-[#1E5B94] shadow-md bg-white">
-                  <span className="text-[#1E5B94] font-bold text-3xl tracking-widest">BPD</span>
-                </div>
+                <BpdBox bpdMembers={bpdMembers} />
               </div>
               <div className="absolute" style={{ top: R0, left: KADES_X }}>
                 <OrgCard title="KEPALA DESA" name={kades?.nama} photoUrl={kades?.fotoUrl} colorScheme="kades" size="large" />
@@ -303,16 +305,16 @@ export default async function PemerintahanPage() {
 
               {/* ROW 3 */}
               <div className="absolute" style={{ top: R3, left: COL[0] }}>
-                <OrgCard title="KUDUS I" name={kadus1?.nama} photoUrl={kadus1?.fotoUrl} colorScheme="green" />
+                <OrgCard title="KADUS I" name={kadus1?.nama} photoUrl={kadus1?.fotoUrl} colorScheme="green" />
               </div>
               <div className="absolute" style={{ top: R3, left: COL[1] }}>
-                <OrgCard title="KUDUS II" name={kadus2?.nama} photoUrl={kadus2?.fotoUrl} colorScheme="green" />
+                <OrgCard title="KADUS II" name={kadus2?.nama} photoUrl={kadus2?.fotoUrl} colorScheme="green" />
               </div>
               <div className="absolute" style={{ top: R3, left: COL[2] }}>
-                <OrgCard title="KUDUS III" name={kadus3?.nama} photoUrl={kadus3?.fotoUrl} colorScheme="green" />
+                <OrgCard title="KADUS III" name={kadus3?.nama} photoUrl={kadus3?.fotoUrl} colorScheme="green" />
               </div>
               <div className="absolute" style={{ top: R3, left: COL[3] }}>
-                <OrgCard title="KUDUS IV" name={kadus4?.nama} photoUrl={kadus4?.fotoUrl} colorScheme="green" />
+                <OrgCard title="KADUS IV" name={kadus4?.nama} photoUrl={kadus4?.fotoUrl} colorScheme="green" />
               </div>
 
               {/* ─── Keterangan ─── */}
@@ -335,6 +337,8 @@ export default async function PemerintahanPage() {
           </div>
         </div>
         </div>
+
+
       </main>
     </div>
   );
