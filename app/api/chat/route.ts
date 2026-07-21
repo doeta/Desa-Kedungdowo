@@ -1,5 +1,6 @@
 import { google } from '@ai-sdk/google';
 import { streamText, convertToModelMessages } from 'ai';
+import { prisma } from '@/lib/prisma';
 
 export const maxDuration = 30;
 
@@ -7,6 +8,16 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const modelMessages = await convertToModelMessages(messages);
+
+  // Mengambil pengetahuan tambahan dari database
+  const knowledges = await prisma.chatbotKnowledge.findMany({
+    orderBy: { createdAt: 'asc' }
+  });
+
+  // Memformat pengetahuan tambahan menjadi string (poin-poin)
+  const dynamicKnowledge = knowledges.length > 0 
+    ? knowledges.map(k => `Q/Topik: ${k.judul}\nA/Info: ${k.isi}\n`).join('\n')
+    : "- (Belum ada data pengetahuan spesifik tambahan dari Admin)";
 
   const result = await streamText({
     model: google('gemini-2.5-flash'), 
@@ -23,6 +34,10 @@ export async function POST(req: Request) {
 [TENTANG WEBSITE INI]
 - Website dan sistem AI ini adalah hasil dedikasi dan karya dari Tim Mahasiswa KKN Universitas Diponegoro (Undip).
 - Jika ditanya mengenai pembuat atau pengembang sistem ini, sampaikan apresiasi bahwa ini adalah kontribusi dari Mahasiswa KKN Undip untuk mendukung kemajuan digitalisasi Desa Kedungdowo.
+
+[PENGETAHUAN & INFORMASI TAMBAHAN DARI ADMIN DESA]
+Berikut adalah basis pengetahuan spesifik yang diinputkan langsung oleh Admin Desa. Selalu utamakan informasi ini untuk menjawab pertanyaan warga yang relevan:
+${dynamicKnowledge}
 
 [ATURAN MENJAWAB (PENTING)]
 1. GAYA BAHASA: Gunakan bahasa Indonesia yang formal, sopan, namun tetap mudah dipahami oleh berbagai kalangan usia. Dilarang keras menggunakan emoji atau emotikon dalam bentuk apa pun di setiap jawaban.
