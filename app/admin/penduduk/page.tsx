@@ -2,14 +2,14 @@ import { getStatistikPenduduk, seedStatistikPenduduk } from "@/app/actions/stati
 import StatistikForm from "./components/StatistikForm";
 import Icon from "../../components/Icon";
 
-export const metadata = { title: "Manajemen Data Penduduk | Admin Desa Kedungdowo" };
+export const metadata = { title: "Manajemen Statistik & Fasilitas Desa | Admin Desa Kedungdowo" };
 
 export default async function DataPendudukPage() {
   // Try to fetch data
   let groupedStats = await getStatistikPenduduk();
   
-  // If database only has old initial seed (less than 5 categories), re-seed with exact data
-  if (Object.keys(groupedStats).length < 5) {
+  // If database only has old initial seed (less than 5 categories) or missing Fasilitas, re-seed
+  if (Object.keys(groupedStats).length < 5 || !groupedStats["Fasilitas Pendidikan"]) {
     await seedStatistikPenduduk();
     groupedStats = await getStatistikPenduduk();
   }
@@ -18,13 +18,17 @@ export default async function DataPendudukPage() {
   const genderStats = groupedStats["Jenis Kelamin"] || [];
   const totalPenduduk = genderStats.reduce((acc, item) => acc + item.jumlah, 0);
 
+  // Split data into Demografi and Fasilitas
+  const demografiStats = Object.entries(groupedStats).filter(([k]) => !k.startsWith("Fasilitas"));
+  const fasilitasStats = Object.entries(groupedStats).filter(([k]) => k.startsWith("Fasilitas"));
+
   return (
     <div>
       <h1 className="font-serif text-3xl font-bold text-on-background mb-2">
-        Manajemen Data Penduduk
+        Statistik & Fasilitas Desa
       </h1>
       <p className="text-on-surface-variant text-sm mb-8">
-        Kelola statistik demografi penduduk Desa Kedungdowo secara dinamis.
+        Kelola data statistik kependudukan dan sarana prasarana yang akan ditampilkan pada halaman Profil Desa secara dinamis.
       </p>
 
       {/* Stats Summary Card */}
@@ -51,11 +55,28 @@ export default async function DataPendudukPage() {
         </div>
       </div>
 
-      {/* Forms Section in a Masonry Layout to handle different heights gracefully */}
+      {/* Demografi Section */}
+      <div className="mb-4 mt-8 flex items-center gap-3 border-b border-outline-variant/30 pb-3">
+        <Icon name="groups" className="text-primary text-2xl" />
+        <h2 className="font-serif text-2xl font-bold text-on-surface">Data Demografi</h2>
+      </div>
       <section className="columns-1 xl:columns-2 gap-6 space-y-6">
-        {Object.entries(groupedStats).map(([kategori, items]) => (
+        {demografiStats.map(([kategori, items]) => (
           <div key={kategori} className="break-inside-avoid">
             <StatistikForm kategori={kategori} items={items} benchmarkTotal={totalPenduduk} />
+          </div>
+        ))}
+      </section>
+
+      {/* Fasilitas Section */}
+      <div className="mb-4 mt-12 flex items-center gap-3 border-b border-outline-variant/30 pb-3">
+        <Icon name="business" className="text-secondary text-2xl" />
+        <h2 className="font-serif text-2xl font-bold text-on-surface">Sarana & Prasarana</h2>
+      </div>
+      <section className="columns-1 xl:columns-2 gap-6 space-y-6">
+        {fasilitasStats.map(([kategori, items]) => (
+          <div key={kategori} className="break-inside-avoid">
+            <StatistikForm kategori={kategori} items={items} />
           </div>
         ))}
       </section>

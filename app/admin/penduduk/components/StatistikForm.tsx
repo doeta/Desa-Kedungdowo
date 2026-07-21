@@ -75,7 +75,8 @@ export default function StatistikForm({ kategori, items, benchmarkTotal }: Stati
 
   const total = formData.reduce((acc, item) => acc + item.jumlah, 0);
   const isKK = kategori.includes("KK") || kategori.toLowerCase().includes("sejahtera");
-  const unitLabel = isKK ? "KK" : "Jiwa";
+  const isFasilitas = kategori.toLowerCase().includes("fasilitas");
+  const unitLabel = isFasilitas ? "Unit" : isKK ? "KK" : "Jiwa";
 
   // Check if this category represents the full population of individual citizens
   const isIndividualLevel = ["agama", "tingkat pendidikan", "kelompok umur", "sebaran dusun"].includes(kategori.toLowerCase());

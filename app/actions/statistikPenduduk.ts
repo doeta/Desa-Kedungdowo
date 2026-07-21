@@ -126,60 +126,91 @@ export async function deleteStatistikPenduduk(id: number) {
 // Seed basic categories if database is empty
 // Seed basic categories
 export async function seedStatistikPenduduk() {
-  await prisma.statistikPenduduk.deleteMany();
+  const existingFasilitas = await prisma.statistikPenduduk.findFirst({
+    where: { kategori: 'Fasilitas Pendidikan' }
+  });
+
+  if (existingFasilitas) return;
   
-  const defaultData = [
-    { kategori: 'Ringkasan Demografi', label: 'Total Kepala Keluarga (KK)', jumlah: 1168 },
-    // Total Populasi is dynamically calculated from Jenis Kelamin, but if they want it explicitly:
-    // { kategori: 'Ringkasan Demografi', label: 'Total Populasi', jumlah: 3368 },
-    { kategori: 'Jenis Kelamin', label: 'Laki-laki', jumlah: 1765 },
-    { kategori: 'Jenis Kelamin', label: 'Perempuan', jumlah: 1603 },
-    { kategori: 'Agama', label: 'Islam', jumlah: 3362 },
-    { kategori: 'Agama', label: 'Kristen', jumlah: 6 },
-    { kategori: 'Agama', label: 'Katolik', jumlah: 0 },
-    { kategori: 'Agama', label: 'Hindu', jumlah: 0 },
-    { kategori: 'Agama', label: 'Buddha', jumlah: 0 },
-    { kategori: 'Agama', label: 'Konghucu', jumlah: 0 },
-    { kategori: 'Pekerjaan', label: 'Karyawan Swasta', jumlah: 511 },
-    { kategori: 'Pekerjaan', label: 'Petani', jumlah: 451 },
-    { kategori: 'Pekerjaan', label: 'Wiraswasta', jumlah: 422 },
-    { kategori: 'Pekerjaan', label: 'Buruh Tani', jumlah: 415 },
-    { kategori: 'Pekerjaan', label: 'Lain-lain', jumlah: 56 },
-    { kategori: 'Pekerjaan', label: 'Perdagangan', jumlah: 53 },
-    { kategori: 'Pekerjaan', label: 'Buruh Harian Lepas', jumlah: 50 },
-    { kategori: 'Pekerjaan', label: 'Pensiunan', jumlah: 25 },
-    { kategori: 'Pekerjaan', label: 'Pegawai Negeri', jumlah: 17 },
-    { kategori: 'Tingkat Pendidikan', label: 'Belum/Tidak Sekolah', jumlah: 968 },
-    { kategori: 'Tingkat Pendidikan', label: 'SD', jumlah: 1024 },
-    { kategori: 'Tingkat Pendidikan', label: 'SMP', jumlah: 626 },
-    { kategori: 'Tingkat Pendidikan', label: 'SMA/SMK', jumlah: 691 },
-    { kategori: 'Tingkat Pendidikan', label: 'Perguruan Tinggi', jumlah: 61 },
-    { kategori: 'Kelompok Umur', label: '0 Bln – 4 Thn', jumlah: 193 },
-    { kategori: 'Kelompok Umur', label: '5 Thn – 9 Thn', jumlah: 231 },
-    { kategori: 'Kelompok Umur', label: '10 Thn – 14 Thn', jumlah: 238 },
-    { kategori: 'Kelompok Umur', label: '15 Thn – 19 Thn', jumlah: 238 },
-    { kategori: 'Kelompok Umur', label: '20 Thn – 24 Thn', jumlah: 308 },
-    { kategori: 'Kelompok Umur', label: '25 Thn – 29 Thn', jumlah: 224 },
-    { kategori: 'Kelompok Umur', label: '30 Thn – 34 Thn', jumlah: 224 },
-    { kategori: 'Kelompok Umur', label: '35 Thn – 39 Thn', jumlah: 235 },
-    { kategori: 'Kelompok Umur', label: '40 Thn – 44 Thn', jumlah: 203 },
-    { kategori: 'Kelompok Umur', label: '45 Thn – 49 Thn', jumlah: 213 },
-    { kategori: 'Kelompok Umur', label: '50 Thn – 54 Thn', jumlah: 229 },
-    { kategori: 'Kelompok Umur', label: '55 Thn – 59 Thn', jumlah: 215 },
-    { kategori: 'Kelompok Umur', label: '60 Tahun keatas', jumlah: 617 },
-    { kategori: 'Kesejahteraan Warga (KK)', label: 'Keluarga Kaya', jumlah: 90 },
-    { kategori: 'Kesejahteraan Warga (KK)', label: 'Keluarga Sedang', jumlah: 389 },
-    { kategori: 'Kesejahteraan Warga (KK)', label: 'Keluarga Miskin', jumlah: 547 },
-    { kategori: 'Kesejahteraan Warga (KK)', label: 'Sangat Miskin', jumlah: 0 },
-    { kategori: 'Ketenagakerjaan', label: 'Total Angkatan Kerja (Usia 15-55 thn)', jumlah: 2010 },
-    { kategori: 'Ketenagakerjaan', label: 'Belum Bekerja / Pengangguran', jumlah: 408 },
-    { kategori: 'Sebaran Dusun', label: 'Dusun Kedungori', jumlah: 0 },
-    { kategori: 'Sebaran Dusun', label: 'Dusun Kedung Lengkong', jumlah: 0 },
-    { kategori: 'Sebaran Dusun', label: 'Dusun Jatisari', jumlah: 0 },
-    { kategori: 'Sebaran Dusun', label: 'Dusun Kedungdowo', jumlah: 0 },
+  const existingPenduduk = await prisma.statistikPenduduk.findFirst();
+  if (!existingPenduduk) {
+    const defaultPendudukData = [
+      { kategori: 'Ringkasan Demografi', label: 'Total Kepala Keluarga (KK)', jumlah: 1168 },
+      { kategori: 'Jenis Kelamin', label: 'Laki-laki', jumlah: 1765 },
+      { kategori: 'Jenis Kelamin', label: 'Perempuan', jumlah: 1603 },
+      { kategori: 'Agama', label: 'Islam', jumlah: 3362 },
+      { kategori: 'Agama', label: 'Kristen', jumlah: 6 },
+      { kategori: 'Agama', label: 'Katolik', jumlah: 0 },
+      { kategori: 'Agama', label: 'Hindu', jumlah: 0 },
+      { kategori: 'Agama', label: 'Buddha', jumlah: 0 },
+      { kategori: 'Agama', label: 'Konghucu', jumlah: 0 },
+      { kategori: 'Pekerjaan', label: 'Karyawan Swasta', jumlah: 511 },
+      { kategori: 'Pekerjaan', label: 'Petani', jumlah: 451 },
+      { kategori: 'Pekerjaan', label: 'Wiraswasta', jumlah: 422 },
+      { kategori: 'Pekerjaan', label: 'Buruh Tani', jumlah: 415 },
+      { kategori: 'Pekerjaan', label: 'Lain-lain', jumlah: 56 },
+      { kategori: 'Pekerjaan', label: 'Perdagangan', jumlah: 53 },
+      { kategori: 'Pekerjaan', label: 'Buruh Harian Lepas', jumlah: 50 },
+      { kategori: 'Pekerjaan', label: 'Pensiunan', jumlah: 25 },
+      { kategori: 'Pekerjaan', label: 'Pegawai Negeri', jumlah: 17 },
+      { kategori: 'Tingkat Pendidikan', label: 'Belum/Tidak Sekolah', jumlah: 968 },
+      { kategori: 'Tingkat Pendidikan', label: 'SD', jumlah: 1024 },
+      { kategori: 'Tingkat Pendidikan', label: 'SMP', jumlah: 626 },
+      { kategori: 'Tingkat Pendidikan', label: 'SMA/SMK', jumlah: 691 },
+      { kategori: 'Tingkat Pendidikan', label: 'Perguruan Tinggi', jumlah: 61 },
+      { kategori: 'Kelompok Umur', label: '0 Bln – 4 Thn', jumlah: 193 },
+      { kategori: 'Kelompok Umur', label: '5 Thn – 9 Thn', jumlah: 231 },
+      { kategori: 'Kelompok Umur', label: '10 Thn – 14 Thn', jumlah: 238 },
+      { kategori: 'Kelompok Umur', label: '15 Thn – 19 Thn', jumlah: 238 },
+      { kategori: 'Kelompok Umur', label: '20 Thn – 24 Thn', jumlah: 308 },
+      { kategori: 'Kelompok Umur', label: '25 Thn – 29 Thn', jumlah: 224 },
+      { kategori: 'Kelompok Umur', label: '30 Thn – 34 Thn', jumlah: 224 },
+      { kategori: 'Kelompok Umur', label: '35 Thn – 39 Thn', jumlah: 235 },
+      { kategori: 'Kelompok Umur', label: '40 Thn – 44 Thn', jumlah: 203 },
+      { kategori: 'Kelompok Umur', label: '45 Thn – 49 Thn', jumlah: 213 },
+      { kategori: 'Kelompok Umur', label: '50 Thn – 54 Thn', jumlah: 229 },
+      { kategori: 'Kelompok Umur', label: '55 Thn – 59 Thn', jumlah: 215 },
+      { kategori: 'Kelompok Umur', label: '60 Tahun keatas', jumlah: 617 },
+      { kategori: 'Kesejahteraan Warga (KK)', label: 'Keluarga Kaya', jumlah: 90 },
+      { kategori: 'Kesejahteraan Warga (KK)', label: 'Keluarga Sedang', jumlah: 389 },
+      { kategori: 'Kesejahteraan Warga (KK)', label: 'Keluarga Miskin', jumlah: 547 },
+      { kategori: 'Kesejahteraan Warga (KK)', label: 'Sangat Miskin', jumlah: 0 },
+      { kategori: 'Ketenagakerjaan', label: 'Total Angkatan Kerja (Usia 15-55 thn)', jumlah: 2010 },
+      { kategori: 'Ketenagakerjaan', label: 'Belum Bekerja / Pengangguran', jumlah: 408 },
+      { kategori: 'Sebaran Dusun', label: 'Dusun Kedungori', jumlah: 0 },
+      { kategori: 'Sebaran Dusun', label: 'Dusun Kedung Lengkong', jumlah: 0 },
+      { kategori: 'Sebaran Dusun', label: 'Dusun Jatisari', jumlah: 0 },
+      { kategori: 'Sebaran Dusun', label: 'Dusun Kedungdowo', jumlah: 0 },
+    ];
+    for (const item of defaultPendudukData) {
+      try {
+        await prisma.statistikPenduduk.upsert({
+          where: { kategori_label: { kategori: item.kategori, label: item.label } },
+          update: {},
+          create: item
+        });
+      } catch (e) { /* ignore race conditions */ }
+    }
+  }
+
+  const defaultFasilitasData = [
+    { kategori: 'Fasilitas Pendidikan', label: 'PAUD / TK', jumlah: 2 },
+    { kategori: 'Fasilitas Pendidikan', label: 'SD / MI', jumlah: 3 },
+    { kategori: 'Fasilitas Pendidikan', label: 'TPA / TPQ / Madin', jumlah: 7 },
+    { kategori: 'Fasilitas Kesehatan', label: 'Posyandu', jumlah: 6 },
+    { kategori: 'Fasilitas Kesehatan', label: 'Polindes', jumlah: 1 },
+    { kategori: 'Fasilitas Kesehatan', label: 'Bidan Desa', jumlah: 1 },
+    { kategori: 'Fasilitas Publik', label: 'Tempat Ibadah', jumlah: 16 },
+    { kategori: 'Fasilitas Publik', label: 'Lapangan Olahraga', jumlah: 4 },
   ];
 
-  for (const item of defaultData) {
-    await prisma.statistikPenduduk.create({ data: item });
+  for (const item of defaultFasilitasData) {
+    try {
+      await prisma.statistikPenduduk.upsert({
+        where: { kategori_label: { kategori: item.kategori, label: item.label } },
+        update: {},
+        create: item
+      });
+    } catch (e) { /* ignore race conditions */ }
   }
 }
