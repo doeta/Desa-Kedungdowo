@@ -19,20 +19,44 @@ const plusJakarta = Plus_Jakarta_Sans({
   weight: ["400", "500", "600", "700"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
-    default: "Desa Kedungdowo — Kecamatan Andong, Kabupaten Boyolali",
+    default: "Website Resmi Desa Kedungdowo",
     template: "%s | Desa Kedungdowo",
   },
   description:
-    "Website resmi profil Desa Kedungdowo, Kecamatan Andong, Kabupaten Boyolali, Jawa Tengah. Informasi pemerintahan, potensi peternakan Desa Korporasi Sapi, UMKM, dan layanan publik.",
-  keywords: [
-    "Desa Kedungdowo",
-    "Kecamatan Andong",
-    "Kabupaten Boyolali",
-    "Desa Korporasi Sapi",
-    "UMKM Kedungdowo",
-  ],
+    "Portal informasi resmi, layanan publik, berita, dan potensi UMKM Desa Kedungdowo, Kecamatan Andong, Kabupaten Boyolali.",
+  keywords: "Desa Kedungdowo, Andong, Boyolali, Web Desa, Pemdes",
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    url: siteUrl,
+    title: "Website Resmi Desa Kedungdowo",
+    description:
+      "Portal informasi resmi, layanan publik, berita, dan potensi UMKM Desa Kedungdowo, Kecamatan Andong, Kabupaten Boyolali.",
+    siteName: "Desa Kedungdowo",
+    images: [
+      {
+        url: `${siteUrl}/og-image.jpg`,
+        width: 1200,
+        height: 630,
+        alt: "Desa Kedungdowo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Website Resmi Desa Kedungdowo",
+    description:
+      "Portal informasi resmi, layanan publik, berita, dan potensi UMKM Desa Kedungdowo, Kecamatan Andong, Kabupaten Boyolali.",
+    images: [`${siteUrl}/og-image.jpg`],
+  },
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function RootLayout({
@@ -40,6 +64,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "GovernmentOrganization",
+    name: "Pemerintah Desa Kedungdowo",
+    url: siteUrl,
+    logo: `${siteUrl}/logo.png`,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "Kantor Kepala Desa Kedungdowo",
+      addressLocality: "Kecamatan Andong",
+      addressRegion: "Kabupaten Boyolali",
+      addressCountry: "ID",
+    },
+  };
+
   return (
     <html
       lang="id"
@@ -49,6 +88,10 @@ export default function RootLayout({
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
       <body className="min-h-full flex flex-col font-sans">

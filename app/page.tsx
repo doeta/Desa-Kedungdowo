@@ -49,7 +49,7 @@ export default async function Home() {
       {/* ====== HERO ====== */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <Image src="/hero-bg.png" alt="Pemandangan Desa Kedungdowo" fill className="object-cover" priority />
+          <Image src="/gambar.jpg" alt="Pemandangan Desa Kedungdowo" fill className="object-cover" priority />
           <div className="hero-gradient absolute inset-0" />
         </div>
 
@@ -71,8 +71,7 @@ export default async function Home() {
           </AnimateIn>
           <AnimateIn delay={0.4}>
             <p className="text-base md:text-lg text-white/80 max-w-2xl leading-relaxed">
-              Kecamatan Andong, Kabupaten Boyolali, Jawa Tengah — Desa Korporasi Sapi
-              dengan potensi peternakan unggulan dan semangat pemberdayaan UMKM syariah.
+Kecamatan Andong, Kabupaten Boyolali, Jawa Tengah — Desa dengan potensi unggulan di bidang pertanian dan peternakan, serta semangat pemberdayaan UMKM lokal.
             </p>
           </AnimateIn>
         </div>
@@ -96,33 +95,13 @@ export default async function Home() {
                   Mengenal Lebih Dekat Desa Kedungdowo
                 </h2>
                 <p className="text-on-surface-variant text-base md:text-lg leading-relaxed mb-4">
-                  Terletak di Kecamatan Andong, Kabupaten Boyolali, Jawa Tengah, <strong>Desa Kedungdowo</strong> merupakan wilayah yang berkembang pesat dengan perpaduan keindahan alam pedesaan dan inovasi pemberdayaan masyarakat.
+                  Terletak di Kecamatan Andong, Kabupaten Boyolali, Jawa Tengah, <strong>Desa Kedungdowo</strong> merupakan wilayah yang berkembang pesat dengan perpaduan harmoni alam pedesaan dan sumber daya manusia yang produktif.
                 </p>
                 <p className="text-on-surface-variant text-base leading-relaxed mb-6">
-                  Desa kami terpilih menjadi salah satu pelopor program nasional <strong>Desa Korporasi Sapi</strong> yang mengintegrasikan peternakan sapi secara modern dari hulu ke hilir. Upaya kemandirian ini didukung erat oleh geliat <strong>UMKM Syariah</strong> yang digerakkan oleh para perempuan kreatif desa di 10 dukuh untuk memajukan perekonomian keluarga.
+                  Perekonomian desa kami ditopang oleh sektor pertanian, peternakan rakyat, serta geliat kewirausahaan UMKM yang digerakkan secara aktif oleh masyarakat. Bersama-sama, seluruh elemen warga di Desa Kedungdowo terus berkolaborasi untuk menciptakan lingkungan yang mandiri, sejahtera, dan berdaya saing.
                 </p>
                 
-                {/* Highlight Features */}
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                  <div className="flex items-start gap-2.5">
-                    <div className="text-primary mt-1">
-                      <Icon name="check_circle" className="text-xl" filled />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-sm text-on-background">Korporasi Sapi</h4>
-                      <p className="text-xs text-on-surface-variant">Koperasi modern & 1.000 sapi</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2.5">
-                    <div className="text-primary mt-1">
-                      <Icon name="check_circle" className="text-xl" filled />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-sm text-on-background">UMKM Syariah</h4>
-                      <p className="text-xs text-on-surface-variant">50+ usaha kreatif perempuan</p>
-                    </div>
-                  </div>
-                </div>
+
 
                 <div>
                   <Link

@@ -1,9 +1,23 @@
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 import Icon from "../components/Icon";
 import AdminCharts from "./components/AdminCharts";
 import { getStatistikPenduduk } from "@/app/actions/statistikPenduduk";
 
+function timeAgo(date: Date) {
+  const diff = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+  if (diff < 60) return "Baru saja";
+  if (diff < 3600) return `${Math.floor(diff / 60)} menit lalu`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`;
+  if (diff < 172800) return "Kemarin";
+  return `${Math.floor(diff / 86400)} hari lalu`;
+}
+
 export default async function AdminDashboard() {
+  const session = await getSession();
+  const displayName = session?.namaLengkap || session?.username || "Admin";
+  const roleLabel = session?.role === "superadmin" ? "Superadmin" : "Admin Desa";
+
   const countBerita = await prisma.artikel.count();
   const countUmkm = await prisma.produkUMKM.count();
   const countPerangkat = await prisma.perangkatDesa.count();
@@ -29,6 +43,74 @@ export default async function AdminDashboard() {
     { label: "Berita & Kegiatan", value: countBerita.toString(), change: "Publikasi", trend: "news", icon: "newspaper", bg: "bg-tertiary-container/10 text-tertiary", badgeBg: "bg-tertiary-fixed/30 text-tertiary" },
   ];
 
+  // Fetch recent activities
+  const recentArsip = await prisma.arsipDigital.findMany({ orderBy: { createdAt: 'desc' }, take: 5 });
+  const recentLayanan = await prisma.layananPublik.findMany({ orderBy: { createdAt: 'desc' }, take: 5 });
+  const recentArtikel = await prisma.artikel.findMany({ orderBy: { createdAt: 'desc' }, take: 5 });
+
+  type Activity = {
+    id: string;
+    type: 'arsip' | 'layanan' | 'artikel';
+    title: string;
+    subtitle: string;
+    date: Date;
+    status: string;
+    statusColor: string;
+    icon: string;
+    iconColor: string;
+  };
+
+  const activities: Activity[] = [];
+
+  recentArsip.forEach(item => {
+    activities.push({
+      id: `arsip-${item.id}`,
+      type: 'arsip',
+      title: `Arsip Baru: ${item.nomor}`,
+      subtitle: `Kategori: ${item.kategori}`,
+      date: item.createdAt,
+      status: 'Selesai',
+      statusColor: 'bg-secondary-container/50 text-secondary border-secondary-container',
+      icon: 'folder',
+      iconColor: 'bg-primary-fixed/20 text-primary',
+    });
+  });
+
+  recentLayanan.forEach(item => {
+    let statusColor = 'bg-primary-fixed/30 text-primary-fixed-variant border-primary-fixed/30';
+    if (item.status === 'Belum Direspon') statusColor = 'bg-error-container/80 text-on-error-container border-error/20';
+    if (item.status === 'Selesai') statusColor = 'bg-secondary-container/50 text-secondary border-secondary-container';
+
+    activities.push({
+      id: `layanan-${item.id}`,
+      type: 'layanan',
+      title: `Layanan: ${item.namaPemohon}`,
+      subtitle: `Kategori: ${item.kategori}`,
+      date: item.createdAt,
+      status: item.status,
+      statusColor,
+      icon: 'support_agent',
+      iconColor: 'bg-error-container/40 text-error',
+    });
+  });
+
+  recentArtikel.forEach(item => {
+    activities.push({
+      id: `artikel-${item.id}`,
+      type: 'artikel',
+      title: `Publikasi: ${item.judul}`,
+      subtitle: `Kategori: ${item.kategori}`,
+      date: item.createdAt,
+      status: 'Selesai',
+      statusColor: 'bg-secondary-container/50 text-secondary border-secondary-container',
+      icon: 'newspaper',
+      iconColor: 'bg-tertiary-fixed/20 text-tertiary',
+    });
+  });
+
+  activities.sort((a, b) => b.date.getTime() - a.date.getTime());
+  const latestActivities = activities.slice(0, 5);
+
   return (
     <div className="space-y-10">
       {/* Asymmetric Grid: Welcome & Weather */}
@@ -43,7 +125,7 @@ export default async function AdminDashboard() {
           <div className="relative z-10 max-w-xl">
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-on-surface mb-3 leading-tight">
               Sugeng Enjang,<br />
-              <span className="text-primary italic">Admin Desa</span>
+              <span className="text-primary italic">{displayName}</span>
             </h2>
             <p className="text-sm md:text-base text-on-surface-variant/80 leading-relaxed">
               Sistem Desa Digital Kedungdowo berjalan optimal hari ini. Seluruh layanan administrasi dan pengelolaan data publik aktif tanpa kendala.
@@ -104,85 +186,33 @@ export default async function AdminDashboard() {
         <div className="p-8">
           <div className="flex flex-col relative">
             
-            {/* Timeline Item 1 */}
-            <div className="timeline-item flex gap-6 pb-8 relative timeline-line">
-              <div className="w-10 h-10 rounded-full bg-primary-fixed/20 border-2 border-white text-primary flex items-center justify-center shrink-0 shadow-sm z-10">
-                <Icon name="storefront" className="text-[18px]" />
-              </div>
-              <div className="flex-1 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/10 hover:shadow-md transition-shadow">
-                <div>
-                  <p className="text-sm font-semibold text-on-surface mb-0.5">UMKM Baru Terdaftar: "Warung Kopi Bu RT"</p>
-                  <p className="text-xs text-on-surface-variant">Kategori: UMKM Syariah</p>
+            {latestActivities.length === 0 ? (
+              <p className="text-on-surface-variant text-sm">Belum ada aktivitas terbaru.</p>
+            ) : latestActivities.map((act, index) => {
+              const isLast = index === latestActivities.length - 1;
+              return (
+                <div key={act.id} className={`timeline-item flex gap-6 relative ${!isLast ? 'pb-8 timeline-line' : ''}`}>
+                  <div className={`w-10 h-10 rounded-full border-2 border-white flex items-center justify-center shrink-0 shadow-sm z-10 ${act.iconColor}`}>
+                    <Icon name={act.icon} className="text-[18px]" />
+                  </div>
+                  <div className={`flex-1 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-surface-container-lowest p-4 rounded-2xl border hover:shadow-md transition-shadow ${act.type === 'layanan' && act.status === 'Belum Direspon' ? 'border-error-container/40' : 'border-outline-variant/10'}`}>
+                    <div>
+                      <p className="text-sm font-semibold text-on-surface mb-0.5">{act.title}</p>
+                      <p className="text-xs text-on-surface-variant">{act.subtitle}</p>
+                    </div>
+                    <div className="flex items-center gap-4 text-right">
+                      <span className="text-[11px] text-on-surface-variant/70">
+                        {timeAgo(act.date)}
+                      </span>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${act.statusColor}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${act.type === 'layanan' && act.status === 'Belum Direspon' ? 'bg-error animate-pulse' : 'bg-current'}`}></span>
+                        <span>{act.status}</span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4 text-right">
-                  <span className="text-[11px] text-on-surface-variant/70">10 menit lalu</span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-fixed/30 text-primary-fixed-variant border border-primary-fixed/30">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                    <span>Diproses</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Timeline Item 2 */}
-            <div className="timeline-item flex gap-6 pb-8 relative timeline-line">
-              <div className="w-10 h-10 rounded-full bg-tertiary-fixed/20 border-2 border-white text-tertiary flex items-center justify-center shrink-0 shadow-sm z-10">
-                <Icon name="newspaper" className="text-[18px]" />
-              </div>
-              <div className="flex-1 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/10 hover:shadow-md transition-shadow">
-                <div>
-                  <p className="text-sm font-semibold text-on-surface mb-0.5">Pengumuman Diterbitkan: "Agenda Bersih Desa Juli 2026"</p>
-                  <p className="text-xs text-on-surface-variant">Kategori: Berita & Kegiatan</p>
-                </div>
-                <div className="flex items-center gap-4 text-right">
-                  <span className="text-[11px] text-on-surface-variant/70">1 jam lalu</span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-fixed/30 text-primary-fixed-variant border border-primary-fixed/30">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                    <span>Diproses</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Timeline Item 3 */}
-            <div className="timeline-item flex gap-6 pb-8 relative timeline-line">
-              <div className="w-10 h-10 rounded-full bg-surface-variant/50 border-2 border-white text-on-surface-variant flex items-center justify-center shrink-0 shadow-sm z-10">
-                <Icon name="badge" className="text-[18px]" />
-              </div>
-              <div className="flex-1 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/10 hover:shadow-md transition-shadow">
-                <div>
-                  <p className="text-sm font-semibold text-on-surface mb-0.5">Pembaruan Struktur Organisasi Perangkat Desa</p>
-                  <p className="text-xs text-on-surface-variant">Kategori: Aparatur Pemerintahan</p>
-                </div>
-                <div className="flex items-center gap-4 text-right">
-                  <span className="text-[11px] text-on-surface-variant/70">3 jam lalu</span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-secondary-container/50 text-secondary border border-secondary-container">
-                    <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-                    <span>Selesai</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Timeline Item 4 */}
-            <div className="timeline-item flex gap-6 relative">
-              <div className="w-10 h-10 rounded-full bg-error-container/40 border-2 border-white text-error flex items-center justify-center shrink-0 shadow-sm z-10">
-                <Icon name="report" className="text-[18px]" />
-              </div>
-              <div className="flex-1 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-surface-container-lowest p-4 rounded-2xl border border-error-container/40 hover:shadow-md transition-shadow">
-                <div>
-                  <p className="text-sm font-semibold text-on-surface mb-0.5">Laporan Layanan: "Pengajuan Dispensasi Kelompok Tani"</p>
-                  <p className="text-xs text-on-surface-variant">Kategori: Layanan Publik</p>
-                </div>
-                <div className="flex items-center gap-4 text-right">
-                  <span className="text-[11px] text-on-surface-variant/70">Kemarin</span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-error-container/80 text-on-error-container border border-error/20">
-                    <span className="w-1.5 h-1.5 rounded-full bg-error"></span>
-                    <span>Tindak Lanjut</span>
-                  </span>
-                </div>
-              </div>
-            </div>
+              );
+            })}
 
           </div>
         </div>

@@ -7,15 +7,34 @@ import { useState } from "react";
 
 const adminMenu = [
   { name: "Dashboard", path: "/admin", icon: "dashboard" },
-  { name: "Data Penduduk", path: "/admin/penduduk", icon: "groups" },
+  { name: "Statistik & Fasilitas", path: "/admin/penduduk", icon: "insert_chart" },
   { name: "Berita & Kegiatan", path: "/admin/berita", icon: "newspaper" },
   { name: "UMKM Syariah", path: "/admin/umkm", icon: "storefront" },
   { name: "Perangkat Desa", path: "/admin/perangkat", icon: "badge" },
+  { name: "Layanan Publik", path: "/admin/layanan", icon: "support_agent" },
+  { name: "JDIH (Peraturan)", path: "/admin/peraturan-desa", icon: "gavel" },
+  { name: "Arsip Digital", path: "/admin/arsip", icon: "folder" },
+  { name: "Pengetahuan AI", path: "/admin/chatbot-knowledge", icon: "smart_toy" },
 ];
 
-export default function AdminSidebar({ logoutAction }: { logoutAction: () => Promise<void> }) {
+// Menu khusus superadmin
+const superadminMenu = [
+  { name: "Kelola Admin", path: "/admin/kelola-admin", icon: "admin_panel_settings" },
+];
+
+export default function AdminSidebar({
+  logoutAction,
+  role,
+}: {
+  logoutAction: () => Promise<void>;
+  role: string;
+}) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const fullMenu = role === "superadmin" 
+    ? [...adminMenu, ...superadminMenu] 
+    : adminMenu;
 
   return (
     <>
@@ -60,31 +79,43 @@ export default function AdminSidebar({ logoutAction }: { logoutAction: () => Pro
 
         {/* Navigation Items */}
         <nav className="flex-1 flex flex-col gap-1 overflow-y-auto pr-2 custom-scrollbar">
-          {adminMenu.map((item) => {
+          {fullMenu.map((item, index) => {
             const isActive = pathname === item.path;
+            // Tambah separator sebelum menu superadmin
+            const showDivider = role === "superadmin" && index === adminMenu.length;
             return (
-              <Link
-                key={item.path}
-                href={item.path}
-                onClick={() => setMobileOpen(false)}
-                className={`group relative flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 ${
-                  isActive
-                    ? "bg-white shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] text-primary font-bold border border-outline-variant/10"
-                    : "text-on-surface-variant hover:text-primary hover:bg-white/40"
-                }`}
-              >
-                {isActive && (
-                  <div className="absolute left-0 w-1.5 h-6 bg-primary rounded-r-full" />
+              <div key={item.path}>
+                {showDivider && (
+                  <div className="my-3 mx-2 flex items-center gap-2">
+                    <div className="flex-1 h-px bg-outline-variant/30" />
+                    <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 font-bold">
+                      Superadmin
+                    </span>
+                    <div className="flex-1 h-px bg-outline-variant/30" />
+                  </div>
                 )}
-                <Icon
-                  name={item.icon}
-                  filled={isActive}
-                  className={`text-[20px] transition-transform group-hover:scale-110 ${
-                    isActive ? "text-primary" : "text-on-surface-variant/70 group-hover:text-primary"
+                <Link
+                  href={item.path}
+                  onClick={() => setMobileOpen(false)}
+                  className={`group relative flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 ${
+                    isActive
+                      ? "bg-white shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] text-primary font-bold border border-outline-variant/10"
+                      : "text-on-surface-variant hover:text-primary hover:bg-white/40"
                   }`}
-                />
-                <span className="text-sm">{item.name}</span>
-              </Link>
+                >
+                  {isActive && (
+                    <div className="absolute left-0 w-1.5 h-6 bg-primary rounded-r-full" />
+                  )}
+                  <Icon
+                    name={item.icon}
+                    filled={isActive}
+                    className={`text-[20px] transition-transform group-hover:scale-110 ${
+                      isActive ? "text-primary" : "text-on-surface-variant/70 group-hover:text-primary"
+                    }`}
+                  />
+                  <span className="text-sm">{item.name}</span>
+                </Link>
+              </div>
             );
           })}
         </nav>

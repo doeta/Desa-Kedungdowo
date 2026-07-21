@@ -1,14 +1,15 @@
-import Link from "next/link";
-import Icon from "../components/Icon";
-import { logout } from "@/lib/auth";
+import { logout, getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import AdminSidebar from "./components/AdminSidebar";
 import AdminHeaderProfile from "./components/AdminHeaderProfile";
+import Icon from "../components/Icon";
 
 export const metadata = { title: "Admin Dashboard | Desa Kedungdowo" };
 export const dynamic = "force-dynamic";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await getSession();
+
   async function handleLogout() {
     "use server";
     await logout();
@@ -26,7 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       />
 
       {/* Sidebar Navigation */}
-      <AdminSidebar logoutAction={handleLogout} />
+      <AdminSidebar logoutAction={handleLogout} role={session?.role || "admin"} />
 
       {/* Main Content Wrapper */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
@@ -60,7 +61,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
             
             {/* Interactive Profile Dropdown & Logout */}
-            <AdminHeaderProfile logoutAction={handleLogout} />
+            <AdminHeaderProfile
+              logoutAction={handleLogout}
+              username={session?.username || "Admin"}
+              role={session?.role || "admin"}
+              namaLengkap={session?.namaLengkap || ""}
+            />
           </div>
 
         </header>

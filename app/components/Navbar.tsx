@@ -9,6 +9,14 @@ const navLinks = [
   { href: "/perangkat", label: "Perangkat Desa" },
   { href: "/umkm", label: "UMKM" },
   { href: "/berita", label: "Berita" },
+  { 
+    href: "/layanan", 
+    label: "Layanan Publik",
+    subLinks: [
+      { href: "/layanan", label: "Pengaduan & Informasi" },
+      { href: "/layanan/peraturan-desa", label: "JDIH / Peraturan Desa" },
+    ]
+  },
 ];
 
 export default function Navbar() {
@@ -74,7 +82,47 @@ export default function Navbar() {
         {/* Desktop Nav Links (Centered) */}
         <div className="hidden md:flex gap-1 items-center absolute left-1/2 -translate-x-1/2">
           {navLinks.map((link) => {
-            const isActive = pathname === link.href;
+            const isActive = pathname === link.href || (link.subLinks && link.subLinks.some(s => pathname === s.href));
+            
+            if (link.subLinks) {
+              return (
+                <div key={link.href} className="relative group">
+                  <button
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-1 ${
+                      showSolid
+                        ? isActive
+                          ? "text-primary bg-primary/10"
+                          : "text-on-surface-variant hover:text-primary hover:bg-primary/5"
+                        : isActive
+                          ? "text-white bg-white/15"
+                          : "text-white/90 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    {link.label}
+                    <span className="material-symbols-outlined text-[16px] transition-transform duration-200 group-hover:rotate-180">
+                      expand_more
+                    </span>
+                  </button>
+                  {/* Dropdown Menu */}
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full pt-2 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-300 w-56 z-50">
+                    <div className="bg-white rounded-xl shadow-xl border border-outline-variant/20 py-2 overflow-hidden flex flex-col">
+                      {link.subLinks.map((sub) => (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          className={`px-4 py-2.5 text-sm transition-colors hover:bg-primary/5 hover:text-primary ${
+                            pathname === sub.href ? "text-primary font-semibold bg-primary/5" : "text-on-surface-variant"
+                          }`}
+                        >
+                          {sub.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={link.href}
@@ -122,6 +170,32 @@ export default function Navbar() {
       >
         <div className="bg-surface/95 backdrop-blur-md border-t border-outline-variant/20 px-6 py-4 flex flex-col gap-1">
           {navLinks.map((link) => {
+            if (link.subLinks) {
+              return (
+                <div key={link.href} className="flex flex-col gap-1">
+                  <div className="px-4 py-2 text-xs font-bold text-outline uppercase tracking-wider mt-2">
+                    {link.label}
+                  </div>
+                  {link.subLinks.map((sub) => {
+                    const isSubActive = pathname === sub.href;
+                    return (
+                      <Link
+                        key={sub.href}
+                        href={sub.href}
+                        className={`px-4 py-3 rounded-lg font-semibold text-sm transition-all ml-2 border-l-2 ${
+                          isSubActive
+                            ? "text-primary bg-primary/10 border-primary"
+                            : "text-on-surface-variant hover:text-primary hover:bg-primary/5 border-transparent"
+                        }`}
+                      >
+                        {sub.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              );
+            }
+
             const isActive = pathname === link.href;
             return (
               <Link

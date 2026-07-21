@@ -5,10 +5,23 @@ import { createPortal } from "react-dom";
 import Icon from "../../components/Icon";
 import Link from "next/link";
 
-export default function AdminHeaderProfile({ logoutAction }: { logoutAction: () => Promise<void> }) {
+export default function AdminHeaderProfile({
+  logoutAction,
+  username,
+  role,
+  namaLengkap,
+}: {
+  logoutAction: () => Promise<void>;
+  username: string;
+  role: string;
+  namaLengkap: string;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const displayName = namaLengkap || username;
+  const roleLabel = role === "superadmin" ? "Superadmin" : "Admin Desa";
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -36,24 +49,52 @@ export default function AdminHeaderProfile({ logoutAction }: { logoutAction: () 
       {/* Avatar Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/20 shadow-sm ml-2 cursor-pointer hover:ring-2 hover:ring-offset-2 hover:ring-primary/40 transition-all focus:outline-none"
+        className="flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full border border-outline-variant/20 shadow-sm ml-2 cursor-pointer hover:ring-2 hover:ring-offset-2 hover:ring-primary/40 transition-all focus:outline-none bg-white/40 hover:bg-white/60"
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <img
-          alt="Admin Avatar"
-          className="w-full h-full object-cover"
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWK1vZmFyYts8dzgeLqBkSaek8Koy54V8gd1gaDWaRMy2SrrlQQ2fc_JuhokK7c2Ujf47_qOsxfFqgbd9geG_ijzTegBKBNhs7rJG49LG9GzIaS87w04HPcghgUE6p3o0SdI7Twuewfn0Q83zqzC_Aqntn5IX9FFjP-fAvQP30r9Ao2uSLSyT1MfD2bJjVHWtfL4N_618gYWvLorZ2zC3YRqj41q8Hjg9t-4oNlZ0tMLz-LM_8uWnOk26zeM0niDE4A7m6iuVkzDtB"
-        />
+        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+          <span className="text-on-primary font-bold text-xs uppercase">
+            {(displayName[0] || "A")}
+          </span>
+        </div>
+        <div className="hidden lg:flex flex-col items-start">
+          <span className="text-xs font-semibold text-on-surface leading-tight">{displayName}</span>
+          <span className={`text-[9px] font-bold uppercase tracking-wider leading-tight ${
+            role === "superadmin" ? "text-tertiary" : "text-secondary"
+          }`}>
+            {roleLabel}
+          </span>
+        </div>
+        <Icon name="expand_more" className="text-on-surface-variant/60 text-base hidden lg:block" />
       </button>
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white/95 backdrop-blur-xl border border-outline-variant/20 rounded-2xl shadow-xl py-3 z-50 animate-fadeIn">
+        <div className="absolute right-0 mt-2 w-72 bg-white/95 backdrop-blur-xl border border-outline-variant/20 rounded-2xl shadow-xl py-3 z-50 animate-fadeIn">
           {/* User Profile Header */}
-          <div className="px-4 py-2 border-b border-outline-variant/20 mb-2">
-            <p className="text-sm font-bold text-on-surface">Admin Desa</p>
-            <p className="text-xs text-on-surface-variant/70 font-medium truncate">admin@kedungdowo.desa.id</p>
+          <div className="px-4 py-3 border-b border-outline-variant/20 mb-2">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
+                <span className="text-on-primary font-bold text-sm uppercase">
+                  {(displayName[0] || "A")}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-on-surface truncate">{displayName}</p>
+                <p className="text-xs text-on-surface-variant/70 font-medium truncate">@{username}</p>
+              </div>
+            </div>
+            <div className="mt-2">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                role === "superadmin" 
+                  ? "bg-tertiary/10 text-tertiary border border-tertiary/20" 
+                  : "bg-primary/10 text-primary border border-primary/20"
+              }`}>
+                <Icon name={role === "superadmin" ? "shield" : "person"} className="text-xs" />
+                {roleLabel}
+              </span>
+            </div>
           </div>
 
           {/* Links */}

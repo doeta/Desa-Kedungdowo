@@ -4,8 +4,12 @@ import { useState, useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import Icon from "./Icon";
 import { AnimatePresence, motion } from "framer-motion";
+import { usePathname } from "next/navigation";
 
 export default function ChatBotDesa() {
+  const pathname = usePathname();
+  const isAdminOrLogin = pathname.startsWith("/admin") || pathname === "/login";
+  
   const [isOpen, setIsOpen] = useState(false);
   
   const [input, setInput] = useState("");
@@ -35,6 +39,8 @@ export default function ChatBotDesa() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, error]);
+
+  if (isAdminOrLogin) return null;
 
   return (
     <motion.div 
