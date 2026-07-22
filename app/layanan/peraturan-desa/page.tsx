@@ -133,7 +133,7 @@ export default async function PeraturanDesaPage({ searchParams }: PageProps) {
                         
                         {item.filePdfUrl ? (
                           <a 
-                            href={item.filePdfUrl} 
+                            href={`/api/dokumen?url=${Buffer.from(item.filePdfUrl).toString('base64')}`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="bg-[#e74c3c]/10 text-[#e74c3c] hover:bg-[#e74c3c] hover:text-white px-4 py-1 rounded-md text-[13px] font-bold transition-colors inline-flex items-center gap-1.5"

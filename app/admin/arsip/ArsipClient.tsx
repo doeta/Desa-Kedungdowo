@@ -189,7 +189,7 @@ export default function ArsipClient({ initialData }: { initialData: any[] }) {
                   <td className="px-4 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       {item.filePdfUrl && (
-                        <a href={item.filePdfUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-md transition-colors" title="Lihat PDF">
+                        <a href={`/api/dokumen?url=${btoa(item.filePdfUrl)}`} target="_blank" rel="noopener noreferrer" className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-md transition-colors" title="Lihat PDF">
                           <Icon name="picture_as_pdf" className="text-lg" />
                         </a>
                       )}

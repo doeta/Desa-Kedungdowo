@@ -5,7 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navLinks = [
-  { href: "/profil", label: "Profil Desa" },
+  { 
+    href: "/profil", 
+    label: "Profil Desa",
+    subLinks: [
+      { href: "/profil", label: "Tentang Desa / Sejarah" },
+      { href: "/potensi/ketahanan-pangan", label: "Katalog Ketahanan Pangan" },
+    ]
+  },
   { href: "/perangkat", label: "Perangkat Desa" },
   { href: "/umkm", label: "UMKM" },
   { href: "/berita", label: "Berita" },

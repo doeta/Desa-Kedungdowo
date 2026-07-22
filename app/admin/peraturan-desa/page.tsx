@@ -25,6 +25,14 @@ export default async function AdminPeraturanPage({
     orderBy: { createdAt: "desc" },
   });
 
+  const handleDelete = async (formData: FormData) => {
+    "use server";
+    const id = formData.get("id") as string;
+    if (id) {
+      await hapusPeraturan(id);
+    }
+  };
+
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -100,7 +108,7 @@ export default async function AdminPeraturanPage({
                     <td className="px-6 py-4 whitespace-nowrap text-right space-x-2">
                       {item.filePdfUrl && (
                         <a 
-                          href={item.filePdfUrl} 
+                          href={`/api/dokumen?url=${Buffer.from(item.filePdfUrl).toString('base64')}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
@@ -112,7 +120,8 @@ export default async function AdminPeraturanPage({
                       
                       <PeraturanForm initialData={item} />
                       
-                      <form action={hapusPeraturan.bind(null, item.id)} className="inline-block">
+                      <form action={handleDelete} className="inline-block">
+                        <input type="hidden" name="id" value={item.id} />
                         <button 
                           type="submit"
                           className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
